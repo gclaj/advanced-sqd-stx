@@ -1,17 +1,19 @@
 /* Advanced Squad STX — event configuration and rubrics.
    This one file drives both the server (which sheets it will accept) and the
-   grading console (what evaluators see). To add a lane, append an entry to LANES.
+   grading console (what evaluators see).
 
-   LANE FORMAT
+   TASKS are the graded tasks. Each is scored, saved, ranked and reported on its own.
+   GRADE_TABS only groups tasks onto the evaluator's grading tabs.
+
+   TASK FORMAT
    {
-     id:    "lane1",                  lowercase letters/digits, unique, never "tlp"
-     label: "Ambush",                 short name for buttons and the rankings column
-     tag:   "lane 1",                 small caption under the button
-     full:  "Lane 1 — Conduct an Ambush",
-     weight: 1,                       optional relative share of the lane weight (default 1)
-     metric: {label:"Time to complete", unit:"min", better:"low"},
+     id:    "ambush",                 lowercase letters/digits, unique, never "tlp"
+     label: "Ambush",                 short name for the rankings column
+     full:  "Conduct an Ambush",
+     weight: 1,                       optional relative share of the non-TLP weight (default 1)
+     metric: {label:"Total time on the lane", unit:"min", better:"low"},
                                       optional objective number; better:"low" or "high".
-                                      Omit or set null for a rubric-only lane.
+                                      Omit or set null for a rubric-only task.
      rubrics: [
        { id:"ambush", title:"Conduct an Ambush — Squad", sub:"T&EO 07-SQD-xxxx · ATP 3-21.8",
          teo:true,                    true = show the T&EO T/P/U matrix rating
@@ -22,8 +24,8 @@
          ]}
      ]
    }
-   Item ids must be unique within a lane. Every measure on every sheet is rated
-   GO or NO-GO; a sheet's score is the percentage of its measures rated GO. */
+   Every measure on every sheet is rated GO or NO-GO; a task's score is the percentage
+   of its measures rated GO. */
 (function (root, factory) {
   var cfg = factory();
   if (typeof module === "object" && module.exports) module.exports = cfg;
@@ -80,7 +82,7 @@
 
   var TEO_GROUPS = {pl: "Plan", pr: "Prepare", ex: "Execute", as: "Assess"};
 
-  /* Lane 1 — Area or Zone Reconnaissance, individual task 171-123-1301 (ATP 3-20.98).
+  /* Area or Zone Reconnaissance, individual task 171-123-1301 (ATP 3-20.98).
      Only the performance steps selected for this STX are graded: 1.f, 3.a, 3.c, 3.d,
      3.e(10), 8, 9. The task carries no critical/leader marks, so no T/P/U is shown. */
   var RECON_RUBRIC = {
@@ -97,7 +99,7 @@
     ]
   };
 
-  /* Report Tactical Information, T&EO 34-CO-0010 (ATP 3-55.4, FM 6-99). Graded on the recon lane.
+  /* Report Tactical Information, T&EO 34-CO-0010 (ATP 3-55.4, FM 6-99).
      Only step 3 (the SALUTE report to higher) is graded, one measure per line 3.a-3.g.
      Step 3 is a critical (+) step, so each line carries the critical mark. */
   var REPORT_RUBRIC = {
@@ -114,7 +116,7 @@
     ]
   };
 
-  /* Lane 2 — Conduct an Attack, Squad. T&EO 07-SQD-1092 (effective 12 Sep 2025), ATP 3-21.8.
+  /* Conduct an Attack, Squad. T&EO 07-SQD-1092 (effective 12 Sep 2025), ATP 3-21.8.
      Only the performance steps selected for this STX are graded: 1, 2, 2.b(2), 2.b(3),
      2.b(9), 2.b(10), 6.c, 6.d, 6.d(2), 6.d(4), 6.d(5), 6.e(4), 6.e(5), 6.e(6), 6.e(7),
      6.e(10), 8. Sub-measures of a critical (+) parent step carry the critical mark.
@@ -143,7 +145,7 @@
     ]
   };
 
-  /* Lane 3 — Conduct an Ambush, Squad. T&EO 07-SQD-9010 (effective 06 Mar 2025), ATP 3-21.8.
+  /* Conduct an Ambush, Squad. T&EO 07-SQD-9010 (effective 06 Mar 2025), ATP 3-21.8.
      Only the performance steps selected for this STX are graded: 2.b(1)(a-b), 2.b(2)(b-e),
      2.b(4), 2.b(7)(b)1-4, 2.b(7)(d-g), 2.b(7)(i-j), 5.g(8)(a-c), 5.g(9), 5.g(12), 5.h,
      6.a, 6.b, 6.e, 7.e, 7.f(1), 7.f(3), 7.g(1-2), 7.g(4), 9.a(2)(a), 9.b(5-7), 10.
@@ -221,13 +223,21 @@
     ]
   };
 
-  /* Objective metric on the timed lanes: total time on the lane, fastest squad = 100. */
+  /* Objective metric on the timed tasks: total time on the lane, fastest squad = 100. */
   var TIME_METRIC = {label:"Total time on the lane", unit:"min", better:"low"};
-  var LANES = [
-    {id:"recon",  label:"Recon",  tag:"lane 1", full:"Lane 1 — Area / Zone Reconnaissance", metric:TIME_METRIC, rubrics:[RECON_RUBRIC, REPORT_RUBRIC]},
-    {id:"attack", label:"Attack", tag:"lane 2", full:"Lane 2 — Squad Attack",               metric:TIME_METRIC, rubrics:[ATTACK_RUBRIC]},
-    {id:"ambush", label:"Ambush", tag:"lane 3", full:"Lane 3 — Squad Ambush",               metric:TIME_METRIC, rubrics:[AMBUSH_RUBRIC]},
-    {id:"linkup", label:"Linkup", tag:"task",   full:"Conduct a Linkup",                    metric:null,        rubrics:[LINKUP_RUBRIC]}
+  var TASKS = [
+    {id:"linkup", label:"Linkup", full:"Conduct a Linkup",                    metric:null,        rubrics:[LINKUP_RUBRIC]},
+    {id:"recon",  label:"Recon",  full:"Conduct a Zone Reconnaissance",       metric:TIME_METRIC, rubrics:[RECON_RUBRIC]},
+    {id:"attack", label:"Attack", full:"Conduct an Attack",                   metric:TIME_METRIC, rubrics:[ATTACK_RUBRIC]},
+    {id:"ambush", label:"Ambush", full:"Conduct an Ambush",                   metric:TIME_METRIC, rubrics:[AMBUSH_RUBRIC]},
+    {id:"report", label:"Report", full:"Report Tactical Information",         metric:null,        rubrics:[REPORT_RUBRIC]}
+  ];
+
+  /* The evaluator's grading tabs. Every task id (and "tlp") appears on exactly one tab. */
+  var GRADE_TABS = [
+    {id:"tab1", label:"Tab 1", tag:"TLP · Linkup · Recon", tasks:["tlp", "linkup", "recon"]},
+    {id:"tab2", label:"Tab 2", tag:"Attack · Ambush",      tasks:["attack", "ambush"]},
+    {id:"tab3", label:"Tab 3", tag:"Report",               tasks:["report"]}
   ];
 
   return {
@@ -236,13 +246,15 @@
     SQUADS: SQUADS,
     SQUAD_NAMES: SQUAD_NAMES,
     TLP: {
-      label: "TLP", tag: "OPORD eval", full: "Squad Leader OPORD / TLP",
+      label: "TLP", full: "Squad Leader OPORD / TLP",
+      title: "Squad Leader OPORD Evaluation", sub: "TC 3-21.76 · ATP 3-21.8",
       note: "Squad Leader OPORD Evaluation — D Co, 2-506 IN (White Currahee). Refs: TC 3-21.76, ATP 3-21.8.",
       items: TLP_ITEMS, groups: TLP_GROUPS,
       tThreshold: 20 /* T: all criticals GO and >= 20 of 24 GO */
     },
-    LANES: LANES,
-    TLP_WEIGHT: 0.20,   /* TLP share of the total; lanes split the rest by their weight */
-    METRIC_BLEND: 0.5   /* share of a lane score that comes from its objective metric */
+    TASKS: TASKS,
+    GRADE_TABS: GRADE_TABS,
+    TLP_WEIGHT: 0.20,   /* TLP share of the total; the other tasks split the rest by their weight */
+    METRIC_BLEND: 0.5   /* share of a timed task's score that comes from its objective metric */
   };
 });

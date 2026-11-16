@@ -35,7 +35,7 @@ const INDEX = fs.readFileSync(path.join(__dirname, "public", "index.html"));
 const RUBRICS = fs.readFileSync(path.join(__dirname, "public", "rubrics.js"));
 
 const VALID_SQUADS = config.SQUADS;
-const VALID_SECTIONS = ["tlp"].concat(config.LANES.map((l) => l.id));
+const VALID_SECTIONS = ["tlp"].concat(config.TASKS.map((l) => l.id));
 
 http
   .createServer((req, res) => {

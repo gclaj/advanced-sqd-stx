@@ -150,7 +150,7 @@ var LOGO_506 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoCAMAAABNO5
 
 /* ---------- configuration (public/rubrics.js) ---------- */
 var CFG = window.STX_CONFIG;
-var TLP = CFG.TLP, TLP_ITEMS = TLP.items, LANES = CFG.LANES;
+var TLP = CFG.TLP, TLP_ITEMS = TLP.items, LANES = CFG.TASKS, GRADE_TABS = CFG.GRADE_TABS;
 var SQUADS = CFG.SQUADS, SQUAD_NAMES = CFG.SQUAD_NAMES;
 var TLP_CRITS = TLP_ITEMS.filter(function(it){ return it.crit; }).length;
 /* Every measure on every sheet is GO (1) or NO-GO (0). */
@@ -183,9 +183,10 @@ var stateEl = document.getElementById("app-state");
 var state; try { state = JSON.parse(stateEl.textContent); } catch(e){ state = {squads:{}}; }
 if(!state.squads) state.squads = {};
 
-var ui = {tab:"grade", squad:SQUADS[0], section:null, rsquad:SQUADS[0]};
+var ui = {tab:"grade", squad:SQUADS[0], gtab:null, rsquad:SQUADS[0]};
 try { var u = JSON.parse(sessionStorage.getItem("stx.ui")||"null"); if(u) ui = Object.assign(ui,u); } catch(e){}
-if(ui.section && SECTION_IDS.indexOf(ui.section) < 0) ui.section = null;
+function gradeTab(id){ return GRADE_TABS.filter(function(t){ return t.id === id; })[0] || null; }
+if(ui.gtab && !gradeTab(ui.gtab)) ui.gtab = null;
 var drafts = {};
 try { drafts = JSON.parse(sessionStorage.getItem("stx.drafts")||"{}") || {}; } catch(e){}
 Object.keys(drafts).forEach(function(k){ if(SECTION_IDS.indexOf(k.split("|")[1]) < 0) delete drafts[k]; });
@@ -310,8 +311,8 @@ function pctOf(sec, data){
   var max = maxOf(sec);
   return max ? rawOf(sec, data).sum / max * 100 : null;
 }
-/* Objective metric: one number per lane (e.g. minutes to complete). Normalized against
-   the best value saved for the same lane across all squads (best = 100), then blended
+/* Objective metric: one number per timed task (minutes on the lane). Normalized against
+   the best value saved for the same task across all squads (best = 100), then blended
    with the rubric percentage at METRIC_BLEND. No value entered -> rubric only. */
 function metricOf(sec, d){
   var m = isLane(sec) ? LANE_BY_ID[sec].metric : null;
@@ -413,7 +414,7 @@ function renderGrade(){
   if(pendingDrafts.length){
     html += '<div class="banner">Unsaved scores on this device: '+pendingDrafts.map(function(k){
       var p=k.split("|"); return esc(squadName(p[0]))+" – "+esc(secDef(p[1]).label);
-    }).join(", ")+'. Open that section and press Save to send them to the rankings.</div>';
+    }).join(", ")+'. Open the tab that holds that sheet and press Save to send them to the rankings.</div>';
   }
   html += '<section class="card"><h2>Admin Data</h2><div class="formrow">';
   html += '<div class="field"><label for="sqsel">Squad being evaluated</label><select id="sqsel" data-act="squad">';
@@ -424,14 +425,27 @@ function renderGrade(){
   html += '</div></section>';
 
   html += '<div class="secbtns">';
-  SECTION_IDS.forEach(function(sec){
-    var def = secDef(sec);
-    html += '<button data-act="section" data-val="'+sec+'" class="'+(ui.section===sec?"on":"")+'">'+esc(def.label)+(hasDraft(ui.squad,sec)?" ●":"")+'<span class="tag">'+esc(def.tag||"")+'</span></button>';
+  GRADE_TABS.forEach(function(t){
+    var dirty = t.tasks.some(function(sec){ return hasDraft(ui.squad, sec); });
+    html += '<button data-act="gtab" data-val="'+t.id+'" class="'+(ui.gtab===t.id?"on":"")+'">'+esc(t.label)+(dirty?" ●":"")+'<span class="tag">'+esc(t.tag||"")+'</span></button>';
   });
   html += '</div>';
-  if(!LANES.length) html += '<p class="empty" style="margin-bottom:14px">Lane grade sheets appear here once the lane T&amp;EO rubrics are loaded.</p>';
 
-  if(ui.section) html += renderPanel(ui.section);
+  var gt = gradeTab(ui.gtab);
+  if(gt){
+    html += '<p class="rubricnote" style="margin:0 2px 12px">Every measure is rated GO or NO-GO. <span class="crit">+ critical</span> measures must all be GO for a T; <span class="ldr">★ leader</span> measures feed the leader column of the T/P/U matrix. Save sends every sheet on this tab that you have changed.</p>';
+    var sum = 0, max = 0, rated = 0, dirtyAny = false;
+    gt.tasks.forEach(function(sec){
+      html += renderSheet(sec);
+      var r = rawOf(sec, getWorking(ui.squad, sec));
+      sum += r.sum; rated += r.rated; max += r.count;
+      if(hasDraft(ui.squad, sec)) dirtyAny = true;
+    });
+    html += '<div class="savebar"><div class="score"><b>'+sum+' / '+max+' GO</b><span>'+esc(gt.label)+' · '+esc(squadName(ui.squad))
+         + ((max-rated) ? ' · '+(max-rated)+' unrated' : '')+'</span>'
+         + (dirtyAny ? '<span class="draft">Unsaved changes</span>' : '')
+         + '</div><button class="savebtn" data-act="save" data-tab="'+gt.id+'"'+(saving?" disabled":"")+'>'+(saving?"Saving…":"Save → Rankings")+'</button></div>';
+  }
   return html;
 }
 
@@ -464,61 +478,41 @@ function metricChipText(sec, d){
   return "best saved: " + best + (m.unit ? " " + m.unit : "");
 }
 
-function renderPanel(sec){
+/* One task's grade sheet (a card). The tab's single save bar is rendered by renderGrade. */
+function renderSheet(sec){
   var def = secDef(sec);
   var sq = ui.squad;
   var data = getWorking(sq, sec);
   var saved = getSaved(sq, sec);
-  var r = rawOf(sec, data);
-  var max = maxOf(sec);
   var html = '<section class="card">';
-  html += '<h2>'+esc(def.full)+'<small>'+esc(squadName(sq))+'</small></h2>';
   if(!isLane(sec)){
-    html += '<p class="rubricnote">'+esc(def.note)+' Measures marked <span class="crit">+ critical</span> must be GO. Time standard: order briefed in 45 minutes or less.</p>';
+    var rating = tlpRating(data), r = rawOf(sec, data);
+    html += '<div class="rubhead"><div><div class="rubtitle">'+esc(def.title)+'</div><div class="rubsub">'+esc(def.sub||"")+' · crit '+critGoCount(data)+'/'+TLP_CRITS+' GO</div></div><div class="rubstat"><span class="rating '+(rating||"pend")+'">'+(rating||"—")+'</span><span class="rubgo">'+r.sum+' / '+r.count+' GO</span></div></div>';
+    html += '<p class="rubricnote" style="margin:10px 0 12px">'+esc(def.note)+' Time standard: order briefed in 45 minutes or less.</p>';
     html += '<div class="formrow" style="margin-bottom:8px">';
     html += '<div class="field"><label for="slname">Squad leader</label><input id="slname" data-act="field" data-field="slName" data-sec="tlp" type="text" autocomplete="off" placeholder="Rank / name" value="'+esc(data.slName)+'"></div>';
     html += '<div class="field"><label for="ordertime">Time of order (min)</label><input id="ordertime" data-act="field" data-field="orderTime" data-sec="tlp" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 40" value="'+esc(data.orderTime)+'"></div>';
     html += '</div>';
     html += renderItems(sec, def.items, def.groups, data);
-  } else {
-    if(!max){
-      html += '<p class="empty">Rubric not loaded for this lane yet.</p></section>';
-      return html;
-    }
-    if(def.metric){
-      var m = def.metric;
-      html += '<div class="engage"><div class="ghead" style="margin-top:0">Objective metric — '+pctTxt(BLEND)+' of this lane’s score</div>';
-      html += '<div class="formrow" style="margin-top:10px;margin-bottom:12px">';
-      html += '<div class="field"><label for="metric">'+esc(m.label)+(m.unit?' ('+esc(m.unit)+')':'')+'</label><input id="metric" data-act="field" data-field="metric" data-sec="'+sec+'" type="text" inputmode="decimal" autocomplete="off" placeholder="number" value="'+esc(data.metric)+'"></div>';
-      html += '<div class="field" style="flex:0 1 auto"><label>'+(m.better==="low"?"Lower is better":"Higher is better")+'</label><div class="datechip" id="metricchip" style="font-weight:700;font-variant-numeric:tabular-nums">'+esc(metricChipText(sec, data))+'</div></div>';
-      html += '</div></div>';
-    }
-    html += '<p class="rubricnote">T&amp;EO performance measures, each rated GO or NO-GO. For the T/P/U rating, <span class="crit">+ critical</span> measures must all be GO for a T and <span class="ldr">★ leader</span> measures feed the leader column of the evaluation matrix.</p>';
-    def.rubrics.forEach(function(rubric){
-      var rg = rubricPts(rubric, data);
-      var rate = teoRating(rubric, data);
-      html += '<div class="rubhead"><div><div class="rubtitle">'+esc(rubric.title)+'</div><div class="rubsub">'+esc(rubric.sub||"")+'</div></div><div class="rubstat">'+(rate?'<span class="rating '+rate+'">'+rate+'</span>':'')+'<span class="rubgo">'+rg.pts+' / '+rg.max+' GO</span></div></div>';
-      html += renderItems(sec, rubric.items, rubric.groups, data);
-    });
-  }
-  if(!isLane(sec)){
     html += '<div class="field" style="margin-top:10px"><label for="sustain">Sustain — what the squad leader did well</label><textarea id="sustain" class="notes" data-act="field" data-field="sustain" data-sec="tlp">'+esc(data.sustain)+'</textarea></div>';
     html += '<div class="field" style="margin-top:10px"><label for="improve">Improve — specific and actionable, tied to measure numbers</label><textarea id="improve" class="notes" data-act="field" data-field="improve" data-sec="tlp">'+esc(data.improve)+'</textarea></div>';
   } else {
+    def.rubrics.forEach(function(rubric, ri){
+      var rg = rubricPts(rubric, data);
+      var rate = teoRating(rubric, data);
+      html += '<div class="rubhead"><div><div class="rubtitle">'+esc(rubric.title)+'</div><div class="rubsub">'+esc(rubric.sub||"")+'</div></div><div class="rubstat">'+(rubric.teo?'<span class="rating '+(rate||"pend")+'">'+(rate||"—")+'</span>':'')+'<span class="rubgo">'+rg.pts+' / '+rg.max+' GO</span></div></div>';
+      if(ri === 0 && def.metric){
+        var m = def.metric;
+        html += '<div class="formrow" style="margin:12px 0 8px">';
+        html += '<div class="field"><label for="metric-'+sec+'">'+esc(m.label)+(m.unit?' ('+esc(m.unit)+')':'')+' — '+pctTxt(BLEND)+' of this score</label><input id="metric-'+sec+'" data-act="field" data-field="metric" data-sec="'+sec+'" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 47.5" value="'+esc(data.metric)+'"></div>';
+        html += '<div class="field" style="flex:0 1 auto"><label>'+(m.better==="low"?"Lower is better":"Higher is better")+'</label><div class="datechip" id="metricchip-'+sec+'" style="font-weight:700;font-variant-numeric:tabular-nums">'+esc(metricChipText(sec, data))+'</div></div>';
+        html += '</div>';
+      }
+      html += renderItems(sec, rubric.items, rubric.groups, data);
+    });
     html += '<textarea class="notes" data-act="field" data-field="notes" data-sec="'+sec+'" placeholder="Evaluator notes / sustains & improves…">'+esc(data.notes)+'</textarea>';
   }
   if(saved) html += '<div class="lastsave">Last saved '+fmtWhen(saved.savedAt)+(saved.savedBy?' by '+esc(saved.savedBy):"")+'.</div>';
-  var unrated = r.count - r.rated;
-  var ratingChip = "";
-  if(!isLane(sec)){
-    var rating = tlpRating(data);
-    ratingChip = '<span class="rating '+(rating||"pend")+'">'+(rating||"—")+'</span>';
-  }
-  html += '<div class="savebar"><div class="score"><b>'+r.sum+' / '+max+'</b><span>'+ (r.sum/max*100).toFixed(1) +'% raw'
-       + (!isLane(sec) ? ' · crit '+critGoCount(data)+'/'+TLP_CRITS : '')
-       + (unrated? ' · '+unrated+' unrated':'')+'</span>'
-       + (hasDraft(sq,sec) ? '<span class="draft">Unsaved changes</span>' : '')
-       + '</div>'+ratingChip+'<button class="savebtn" data-act="save" data-sec="'+sec+'"'+(saving?" disabled":"")+'>'+(saving?"Saving…":"Save → Rankings")+'</button></div>';
   html += '</section>';
   return html;
 }
@@ -528,10 +522,10 @@ function formulaText(){
   var txt = 'Every measure is GO or NO-GO, and each sheet scores the percentage of its measures rated GO. ';
   if(LANES.length){
     if(LANES.some(function(l){ return l.metric; })){
-      txt += 'Where a lane has an objective metric, its score is <code>'+pctTxt(1-BLEND)+' rubric + '+pctTxt(BLEND)+' metric score</code>, the metric score being that squad’s value against the best saved for the same lane (best squad = 100). A lane with no metric value entered scores on the rubric alone. ';
+      txt += 'Where a task is timed, its score is <code>'+pctTxt(1-BLEND)+' rubric + '+pctTxt(BLEND)+' time score</code>, the time score being the fastest time saved for that task divided by the squad’s own time (fastest squad = 100). A timed task with no time entered scores on the rubric alone. ';
     }
   }
-  txt += 'Weighted total: '+parts.map(function(x){ return '<code>'+x+'</code>'; }).join(' + ')+' — maximum possible 100.0. Sheets not yet graded count as zero. Rankings update for everyone the moment an evaluator saves a sheet.';
+  txt += 'Weighted total: '+parts.map(function(x){ return '<code>'+x+'</code>'; }).join(' + ')+' — maximum possible 100.0. Sheets not yet graded count as zero. Rankings update for everyone the moment an evaluator saves.';
   return txt;
 }
 
@@ -599,7 +593,7 @@ function renderReport(){
     var max = maxOf(sec);
     html += '<section class="card">';
     if(!saved || !max){
-      html += '<h2>'+esc(def.full)+'</h2><p class="empty">'+(max?"Not yet evaluated.":"Rubric not loaded for this lane yet.")+'</p></section>';
+      html += '<h2>'+esc(def.full)+'</h2><p class="empty">'+(max?"Not yet evaluated.":"Rubric not loaded for this task yet.")+'</p></section>';
       return;
     }
     var r = rawOf(sec, saved);
@@ -609,7 +603,7 @@ function renderReport(){
     if(isLane(sec) && def.metric){
       var mv = metricOf(sec, saved);
       if(mv !== null){
-        metricTxt = ' · rubric '+(r.sum/max*100).toFixed(1)+'% · '+esc(def.metric.label.toLowerCase())+' '+mv+(def.metric.unit?' '+esc(def.metric.unit):'')+' (metric score '+metricPctOf(sq, sec).toFixed(1)+'% of best) · combined = '+pctTxt(1-BLEND)+' rubric + '+pctTxt(BLEND)+' metric';
+        metricTxt = ' · rubric '+(r.sum/max*100).toFixed(1)+'% · '+esc(def.metric.label.toLowerCase())+' '+mv+(def.metric.unit?' '+esc(def.metric.unit):'')+' (time score '+metricPctOf(sq, sec).toFixed(1)+') · combined = '+pctTxt(1-BLEND)+' rubric + '+pctTxt(BLEND)+' time';
       } else {
         metricTxt = ' · no '+esc(def.metric.label.toLowerCase())+' entered — rubric % only';
       }
@@ -642,28 +636,37 @@ function renderReport(){
 }
 
 /* ---------- save to server ---------- */
-function doSave(sec){
-  if(saving) return;
-  var sq = ui.squad;
+function postSheet(sq, sec){
   var data = getWorking(sq, sec);
-  saving = true; render();
   var record = {scores: data.scores, savedBy: evaluator || "", savedAt: new Date().toISOString()};
   TEXT_FIELDS.forEach(function(f){ record[f] = data[f] || ""; });
   setWorking(sq, sec, data); /* keep a copy until the server confirms */
-  fetch("/api/section", {
+  return fetch("/api/section", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({squad: sq, section: sec, data: record})
   }).then(function(r){
     if(!r.ok) throw new Error("HTTP "+r.status);
     return r.json();
-  }).then(function(st){
-    adoptState(st); online = true; saving = false;
+  }).then(adoptState);
+}
+/* Saves every sheet on the grading tab that has unsaved changes, one after another. */
+function doSave(tabId){
+  if(saving) return;
+  var gt = gradeTab(tabId); if(!gt) return;
+  var sq = ui.squad;
+  var todo = gt.tasks.filter(function(sec){ return hasDraft(sq, sec); });
+  if(!todo.length){ toast("Nothing new to save on this tab."); return; }
+  saving = true; render();
+  var chain = Promise.resolve();
+  todo.forEach(function(sec){ chain = chain.then(function(){ return postSheet(sq, sec); }); });
+  chain.then(function(){
+    online = true; saving = false;
     cleanDrafts(); render();
-    toast("Saved — rankings updated for everyone.");
+    toast("Saved \u2014 rankings updated for everyone.");
   }).catch(function(e){
-    saving = false; online = false; render();
-    toast("Save failed — check the connection. Your entries are kept; try again.");
+    saving = false; online = false; cleanDrafts(); render();
+    toast("Save failed \u2014 check the connection. Your entries are kept; try again.");
   });
 }
 
@@ -673,14 +676,14 @@ app.addEventListener("click", function(ev){
   if(!btn) return;
   var act = btn.getAttribute("data-act");
   if(act==="tab"){ ui.tab = btn.getAttribute("data-val"); persistUi(); render(); }
-  else if(act==="section"){ ui.section = btn.getAttribute("data-val"); persistUi(); render(); }
+  else if(act==="gtab"){ ui.gtab = btn.getAttribute("data-val"); persistUi(); render(); }
   else if(act==="rate"){
     var sec = btn.getAttribute("data-sec"), item = btn.getAttribute("data-item"), val = parseInt(btn.getAttribute("data-val"),10);
     var data = getWorking(ui.squad, sec);
     if(data.scores[item] === val) delete data.scores[item]; else data.scores[item] = val;
     setWorking(ui.squad, sec, data); render();
   }
-  else if(act==="save"){ doSave(btn.getAttribute("data-sec")); }
+  else if(act==="save"){ doSave(btn.getAttribute("data-tab")); }
   else if(act==="rsquad"){ ui.rsquad = btn.getAttribute("data-val"); persistUi(); render(); }
 });
 app.addEventListener("input", function(ev){
@@ -694,7 +697,7 @@ app.addEventListener("input", function(ev){
     data[fieldName] = el.value;
     setWorking(ui.squad, sec, data);
     if(fieldName === "metric"){
-      var chip = document.getElementById("metricchip");
+      var chip = document.getElementById("metricchip-"+sec);
       if(chip) chip.textContent = metricChipText(sec, data);
     }
     /* update draft chip without full re-render (keeps focus) */
