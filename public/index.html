@@ -93,23 +93,6 @@ header.top{display:flex;align-items:center;gap:14px;padding:8px 2px 14px}
 .gng button{min-height:42px;border:1px solid var(--line);border-radius:8px;background:var(--chip);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:.08em;text-transform:uppercase}
 .gng button.go.on{background:var(--go);color:var(--go-ink);border-color:var(--go)}
 .gng button.nogo.on{background:var(--nogo);color:var(--nogo-ink);border-color:var(--nogo)}
-.std4{display:grid;grid-template-columns:repeat(4,minmax(64px,1fr));gap:5px;max-width:430px}
-.std4 button{min-height:46px;border:1px solid var(--line);border-radius:8px;background:var(--chip);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5px 4px}
-.std4 button b{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
-.std4 button span{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2)}
-.std4 button.on span{color:inherit;opacity:.85}
-.std4 button.v0.on{background:var(--ink2);border-color:var(--ink2);color:var(--bg)}
-.std4 button.v1.on{background:var(--nogo);border-color:var(--nogo);color:var(--nogo-ink)}
-.std4 button.v2.on{background:var(--go);border-color:var(--go);color:var(--go-ink)}
-.std4 button.v3.on{background:var(--gold);border-color:var(--gold);color:#fff}
-ul.repitems .res.exc{color:var(--gold)}
-.chks{display:flex;flex-direction:column;gap:5px;margin-top:2px}
-.chk{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);text-align:left;padding:4px 2px;min-height:30px;width:100%;max-width:430px}
-.chk .pt{margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--ink2);white-space:nowrap}
-.chk.on .pt{color:var(--go)}
-.chk .box{width:21px;height:21px;border:1.5px solid var(--line);border-radius:5px;background:var(--chip);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none}
-.chk.on .box{background:var(--go);border-color:var(--go);color:var(--go-ink)}
-ul.repitems li.subchk{border-top:none;padding:2px 0 2px 20px;font-size:12.5px;color:var(--ink2)}
 textarea.notes{width:100%;min-height:74px;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);resize:vertical;margin-top:4px}
 .savebar{position:sticky;bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.18);margin-top:14px}
 .savebar .score{font-variant-numeric:tabular-nums}
@@ -170,15 +153,7 @@ var CFG = window.STX_CONFIG;
 var TLP = CFG.TLP, TLP_ITEMS = TLP.items, LANES = CFG.LANES;
 var SQUADS = CFG.SQUADS, SQUAD_NAMES = CFG.SQUAD_NAMES;
 var TLP_CRITS = TLP_ITEMS.filter(function(it){ return it.crit; }).length;
-/* Lane grading scale: each measure scored 0-3. A measure counts as passing
-   (a "GO" for the T&EO T/P/U matrix) at Met standard or better (>= STD4_PASS). */
-var STD4 = [
-  {v:0, l:"N/O",      full:"Not observed"},
-  {v:1, l:"Not met",  full:"Did not meet standard"},
-  {v:2, l:"Met",      full:"Met standard"},
-  {v:3, l:"Exceeded", full:"Exceeded standard"}
-];
-var STD4_MAX = 3, STD4_PASS = 2;
+/* Every measure on every sheet is GO (1) or NO-GO (0). */
 var BLEND = CFG.METRIC_BLEND;
 var SECTION_IDS = ["tlp"].concat(LANES.map(function(l){ return l.id; }));
 var LANE_BY_ID = {};
@@ -293,26 +268,15 @@ function persistUi(){ try{ sessionStorage.setItem("stx.ui", JSON.stringify(ui));
 
 /* ---------- scoring ---------- */
 function rawOf(sec, data){
-  var items = sectionItems(sec), sum = 0, rated = 0, count = 0;
+  var items = sectionItems(sec), sum = 0, rated = 0;
   items.forEach(function(it){
-    if(!it.checksOnly){
-      count++;
-      var v = data.scores ? data.scores[it.id] : undefined;
-      if(v !== undefined && v !== null){ sum += v; rated++; }
-    }
-    if(it.checks){
-      it.checks.forEach(function(c){ if(data.scores && data.scores[c.id] === 1) sum++; });
-    }
+    var v = data.scores ? data.scores[it.id] : undefined;
+    if(v === 0 || v === 1){ sum += v; rated++; }
   });
-  return {sum:sum, rated:rated, count:count};
+  return {sum:sum, rated:rated, count:items.length};
 }
-function maxOf(sec){
-  if(!isLane(sec)) return TLP_ITEMS.length;
-  var m = 0;
-  sectionItems(sec).forEach(function(it){ m += (it.checksOnly ? 0 : STD4_MAX) + (it.checks ? it.checks.length : 0); });
-  return m;
-}
-/* T&EO objective task evaluation matrix, applied to one rubric's scores:
+function maxOf(sec){ return sectionItems(sec).length; }
+/* T&EO objective task evaluation matrix, applied to one rubric's GO/NO-GO scores:
    performance measures >=80% GO, 65-79%, <65% -> T/P/U;
    critical measures: all GO -> T, any NO-GO -> P at best;
    leader measures >=85%, 75-84%, <=74% -> T/P/U. Overall = worst of the three.
@@ -320,11 +284,8 @@ function maxOf(sec){
 function teoRating(rubric, data){
   if(!data || !rubric.teo || !rubric.items.length) return null;
   var scores = data.scores || {};
-  var pass = function(it){
-    if(it.checksOnly) return it.checks.every(function(c){ return scores[c.id] === 1; });
-    return scores[it.id] >= STD4_PASS;
-  };
-  var allRated = rubric.items.every(function(it){ return it.checksOnly || typeof scores[it.id] === "number"; });
+  var pass = function(it){ return scores[it.id] === 1; };
+  var allRated = rubric.items.every(function(it){ return scores[it.id] === 0 || scores[it.id] === 1; });
   if(!allRated) return null;
   var total = rubric.items.length;
   var go = rubric.items.filter(pass).length;
@@ -342,17 +303,7 @@ function teoRating(rubric, data){
 }
 function rubricPts(rubric, data){
   var scores = (data && data.scores) || {};
-  var pts = 0, max = 0;
-  rubric.items.forEach(function(it){
-    if(!it.checksOnly){
-      max += STD4_MAX;
-      if(typeof scores[it.id] === "number") pts += scores[it.id];
-    }
-    if(it.checks){
-      it.checks.forEach(function(c){ max++; if(scores[c.id] === 1) pts++; });
-    }
-  });
-  return {pts:pts, max:max};
+  return {pts: rubric.items.filter(function(it){ return scores[it.id] === 1; }).length, max: rubric.items.length};
 }
 function pctOf(sec, data){
   if(!data) return null;
@@ -484,7 +435,7 @@ function renderGrade(){
   return html;
 }
 
-function renderItems(sec, items, groups, data, style){
+function renderItems(sec, items, groups, data){
   var html = "", lastGroup = null;
   items.forEach(function(it, i){
     var v = data.scores[it.id];
@@ -497,29 +448,10 @@ function renderItems(sec, items, groups, data, style){
          + (it.crit?'<span class="crit">+ critical</span>':'')
          + (it.ldr?'<span class="ldr">★ leader</span>':'')
          + '</div><div class="idesc">'+esc(it.d)+'</div></div>';
-    if(style === "std4"){
-      if(!it.checksOnly){
-        html += '<div class="std4">';
-        STD4.forEach(function(o){
-          html += '<button class="v'+o.v+' '+(v===o.v?"on":"")+'" data-act="rate" data-sec="'+sec+'" data-item="'+it.id+'" data-val="'+o.v+'" aria-pressed="'+(v===o.v)+'" title="'+esc(o.full)+'"><b>'+o.v+'</b><span>'+esc(o.l)+'</span></button>';
-        });
-        html += '</div>';
-      }
-      if(it.checks){
-        html += '<div class="chks">';
-        it.checks.forEach(function(c){
-          var on = data.scores[c.id] === 1;
-          html += '<button class="chk '+(on?"on":"")+'" data-act="check" data-sec="'+sec+'" data-item="'+c.id+'" aria-pressed="'+on+'"><span class="box">'+(on?"✓":"")+'</span>'+esc(c.l)+'<span class="pt">+1 pt</span></button>';
-        });
-        html += '</div>';
-      }
-    } else {
-      html += '<div class="gng">';
-      html += '<button class="go '+(v===1?"on":"")+'" data-act="rate" data-sec="'+sec+'" data-item="'+it.id+'" data-val="1" aria-pressed="'+(v===1)+'">Go</button>';
-      html += '<button class="nogo '+(v===0?"on":"")+'" data-act="rate" data-sec="'+sec+'" data-item="'+it.id+'" data-val="0" aria-pressed="'+(v===0)+'">No-Go</button>';
-      html += '</div>';
-    }
-    html += '</div>';
+    html += '<div class="gng">';
+    html += '<button class="go '+(v===1?"on":"")+'" data-act="rate" data-sec="'+sec+'" data-item="'+it.id+'" data-val="1" aria-pressed="'+(v===1)+'">Go</button>';
+    html += '<button class="nogo '+(v===0?"on":"")+'" data-act="rate" data-sec="'+sec+'" data-item="'+it.id+'" data-val="0" aria-pressed="'+(v===0)+'">No-Go</button>';
+    html += '</div></div>';
   });
   return html;
 }
@@ -547,7 +479,7 @@ function renderPanel(sec){
     html += '<div class="field"><label for="slname">Squad leader</label><input id="slname" data-act="field" data-field="slName" data-sec="tlp" type="text" autocomplete="off" placeholder="Rank / name" value="'+esc(data.slName)+'"></div>';
     html += '<div class="field"><label for="ordertime">Time of order (min)</label><input id="ordertime" data-act="field" data-field="orderTime" data-sec="tlp" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 40" value="'+esc(data.orderTime)+'"></div>';
     html += '</div>';
-    html += renderItems(sec, def.items, def.groups, data, "gng");
+    html += renderItems(sec, def.items, def.groups, data);
   } else {
     if(!max){
       html += '<p class="empty">Rubric not loaded for this lane yet.</p></section>';
@@ -561,12 +493,12 @@ function renderPanel(sec){
       html += '<div class="field" style="flex:0 1 auto"><label>'+(m.better==="low"?"Lower is better":"Higher is better")+'</label><div class="datechip" id="metricchip" style="font-weight:700;font-variant-numeric:tabular-nums">'+esc(metricChipText(sec, data))+'</div></div>';
       html += '</div></div>';
     }
-    html += '<p class="rubricnote">T&amp;EO performance measures, each scored 0 Not observed · 1 Did not meet standard · 2 Met standard · 3 Exceeded standard. For the T/P/U rating, a measure passes at Met or better; <span class="crit">+ critical</span> measures must all pass for a T and <span class="ldr">★ leader</span> measures feed the leader column of the evaluation matrix.</p>';
+    html += '<p class="rubricnote">T&amp;EO performance measures, each rated GO or NO-GO. For the T/P/U rating, <span class="crit">+ critical</span> measures must all be GO for a T and <span class="ldr">★ leader</span> measures feed the leader column of the evaluation matrix.</p>';
     def.rubrics.forEach(function(rubric){
       var rg = rubricPts(rubric, data);
       var rate = teoRating(rubric, data);
-      html += '<div class="rubhead"><div><div class="rubtitle">'+esc(rubric.title)+'</div><div class="rubsub">'+esc(rubric.sub||"")+'</div></div><div class="rubstat">'+(rate?'<span class="rating '+rate+'">'+rate+'</span>':'')+'<span class="rubgo">'+rg.pts+' / '+rg.max+' pts</span></div></div>';
-      html += renderItems(sec, rubric.items, rubric.groups, data, "std4");
+      html += '<div class="rubhead"><div><div class="rubtitle">'+esc(rubric.title)+'</div><div class="rubsub">'+esc(rubric.sub||"")+'</div></div><div class="rubstat">'+(rate?'<span class="rating '+rate+'">'+rate+'</span>':'')+'<span class="rubgo">'+rg.pts+' / '+rg.max+' GO</span></div></div>';
+      html += renderItems(sec, rubric.items, rubric.groups, data);
     });
   }
   if(!isLane(sec)){
@@ -593,13 +525,11 @@ function renderPanel(sec){
 
 function formulaText(){
   var parts = SECTION_IDS.map(function(sec){ return esc(secDef(sec).label)+' × '+pctTxt(W[sec]); });
-  var txt = 'TLP is the raw percentage of GO measures. ';
+  var txt = 'Every measure is GO or NO-GO, and each sheet scores the percentage of its measures rated GO. ';
   if(LANES.length){
-    txt += 'Each lane score is its rubric percentage';
     if(LANES.some(function(l){ return l.metric; })){
-      txt += '; where a lane has an objective metric, the score is <code>'+pctTxt(1-BLEND)+' rubric + '+pctTxt(BLEND)+' metric score</code>, the metric score being that squad’s value against the best saved for the same lane (best squad = 100). A lane with no metric value entered scores on the rubric alone';
+      txt += 'Where a lane has an objective metric, its score is <code>'+pctTxt(1-BLEND)+' rubric + '+pctTxt(BLEND)+' metric score</code>, the metric score being that squad’s value against the best saved for the same lane (best squad = 100). A lane with no metric value entered scores on the rubric alone. ';
     }
-    txt += '. ';
   }
   txt += 'Weighted total: '+parts.map(function(x){ return '<code>'+x+'</code>'; }).join(' + ')+' — maximum possible 100.0. Sheets not yet graded count as zero. Rankings update for everyone the moment an evaluator saves a sheet.';
   return txt;
@@ -646,31 +576,12 @@ function renderRank(){
   return html;
 }
 
-function repItemsHtml(items, saved, style){
+function repItemsHtml(items, saved){
   var html = '<ul class="repitems">';
   items.forEach(function(it){
     var v = saved.scores ? saved.scores[it.id] : undefined;
-    var res;
-    if(style === "std4" && it.checksOnly){
-      var ck = it.checks.filter(function(c){ return saved.scores && saved.scores[c.id] === 1; }).length;
-      var ccls = ck === it.checks.length ? "go" : ck === 0 ? "nogo" : "exc";
-      res = '<span class="res '+ccls+'">'+ck+' / '+it.checks.length+'</span>';
-    } else if(style === "std4"){
-      if(typeof v !== "number" || !STD4[v]) res = '<span class="res dim">—</span>';
-      else {
-        var cls = v===0 ? "dim" : v===1 ? "nogo" : v===2 ? "go" : "exc";
-        res = '<span class="res '+cls+'">'+esc(STD4[v].l)+' · '+v+'/'+STD4_MAX+'</span>';
-      }
-    } else {
-      res = v===1 ? '<span class="res go">GO</span>' : v===0 ? '<span class="res nogo">NO-GO</span>' : '<span class="res dim">—</span>';
-    }
+    var res = v===1 ? '<span class="res go">GO</span>' : v===0 ? '<span class="res nogo">NO-GO</span>' : '<span class="res dim">—</span>';
     html += '<li><span>'+(it.num?'<span class="num">'+esc(it.num)+'</span> ':'')+esc(it.name)+(it.crit?' <span class="crit">+</span>':'')+(it.ldr?' <span class="ldr">★</span>':'')+'</span>'+res+'</li>';
-    if(style === "std4" && it.checks){
-      it.checks.forEach(function(c){
-        var cv = saved.scores ? saved.scores[c.id] : undefined;
-        html += '<li class="subchk"><span>'+esc(c.l)+'</span>'+(cv===1?'<span class="res go">✓ 1 / 1</span>':'<span class="res nogo">✗ 0 / 1</span>')+'</li>';
-      });
-    }
   });
   return html + '</ul>';
 }
@@ -703,7 +614,7 @@ function renderReport(){
         metricTxt = ' · no '+esc(def.metric.label.toLowerCase())+' entered — rubric % only';
       }
     }
-    html += '<div class="repmeta">'+r.sum+' / '+max+' points · weight '+pctTxt(W[sec])
+    html += '<div class="repmeta">'+r.sum+' / '+max+' GO · weight '+pctTxt(W[sec])
          + metricTxt
          + (sec==="tlp" ? ' · critical measures '+critGoCount(saved)+'/'+TLP_CRITS+' GO'
             + (saved.slName ? ' · SL: '+esc(saved.slName) : '')
@@ -713,11 +624,11 @@ function renderReport(){
       def.rubrics.forEach(function(rubric){
         var rg = rubricPts(rubric, saved);
         var rrate = teoRating(rubric, saved);
-        html += '<div class="rubhead"><div><div class="rubtitle">'+esc(rubric.title)+'</div><div class="rubsub">'+esc(rubric.sub||"")+'</div></div><div class="rubstat">'+(rrate?'<span class="rating '+rrate+'">'+rrate+'</span>':'')+'<span class="rubgo">'+rg.pts+' / '+rg.max+' pts</span></div></div>';
-        html += repItemsHtml(rubric.items, saved, "std4");
+        html += '<div class="rubhead"><div><div class="rubtitle">'+esc(rubric.title)+'</div><div class="rubsub">'+esc(rubric.sub||"")+'</div></div><div class="rubstat">'+(rrate?'<span class="rating '+rrate+'">'+rrate+'</span>':'')+'<span class="rubgo">'+rg.pts+' / '+rg.max+' GO</span></div></div>';
+        html += repItemsHtml(rubric.items, saved);
       });
     } else {
-      html += repItemsHtml(def.items, saved, "gng");
+      html += repItemsHtml(def.items, saved);
     }
     if(saved.sustain) html += '<div class="repnotes"><b>Sustain:</b> '+esc(saved.sustain)+'</div>';
     if(saved.improve) html += '<div class="repnotes"><b>Improve:</b> '+esc(saved.improve)+'</div>';
@@ -768,12 +679,6 @@ app.addEventListener("click", function(ev){
     var data = getWorking(ui.squad, sec);
     if(data.scores[item] === val) delete data.scores[item]; else data.scores[item] = val;
     setWorking(ui.squad, sec, data); render();
-  }
-  else if(act==="check"){
-    var csec = btn.getAttribute("data-sec"), cid = btn.getAttribute("data-item");
-    var cdata = getWorking(ui.squad, csec);
-    if(cdata.scores[cid] === 1) delete cdata.scores[cid]; else cdata.scores[cid] = 1;
-    setWorking(ui.squad, csec, cdata); render();
   }
   else if(act==="save"){ doSave(btn.getAttribute("data-sec")); }
   else if(act==="rsquad"){ ui.rsquad = btn.getAttribute("data-val"); persistUi(); render(); }

@@ -18,14 +18,12 @@
          groups:null,                 or {pl:"Plan", pr:"Prepare", ...} with g:"pl" on items
          items:[
            {id:"b1", num:"1", crit:true, name:"Measure name", d:"Standard / description."},
-           {id:"b2", num:"2", ldr:true,  name:"Leader measure", d:"..."},
-           {id:"b3", num:"3", checksOnly:true, name:"Checklist measure", d:"...",
-             checks:[{id:"b3c1", l:"Check one"}, {id:"b3c2", l:"Check two"}]}
+           {id:"b2", num:"2", ldr:true,  name:"Leader measure", d:"..."}
          ]}
      ]
    }
-   Item ids must be unique within a lane. Lane measures are scored 0-3
-   (N/O, Not met, Met, Exceeded); checks are 1 point each. */
+   Item ids must be unique within a lane. Every measure on every sheet is rated
+   GO or NO-GO; a sheet's score is the percentage of its measures rated GO. */
 (function (root, factory) {
   var cfg = factory();
   if (typeof module === "object" && module.exports) module.exports = cfg;
