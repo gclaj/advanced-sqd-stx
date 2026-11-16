@@ -193,12 +193,14 @@
     ]
   };
 
-  /* Tactical lanes — see LANE FORMAT above. Set metric on a lane to switch on its
-     objective number, e.g. metric: {label:"Time to complete", unit:"min", better:"low"}. */
+  /* Tactical lanes — see LANE FORMAT above. Set metric:null on a lane to grade it
+     on the rubric alone. */
+  /* Objective metric on every lane: total time on the lane, fastest squad = 100. */
+  var TIME_METRIC = {label:"Total time on the lane", unit:"min", better:"low"};
   var LANES = [
-    {id:"recon",  label:"Recon",  tag:"lane 1", full:"Lane 1 — Area / Zone Reconnaissance", metric:null, rubrics:[RECON_RUBRIC, REPORT_RUBRIC]},
-    {id:"attack", label:"Attack", tag:"lane 2", full:"Lane 2 — Squad Attack",               metric:null, rubrics:[ATTACK_RUBRIC]},
-    {id:"ambush", label:"Ambush", tag:"lane 3", full:"Lane 3 — Squad Ambush",               metric:null, rubrics:[AMBUSH_RUBRIC]}
+    {id:"recon",  label:"Recon",  tag:"lane 1", full:"Lane 1 — Area / Zone Reconnaissance", metric:TIME_METRIC, rubrics:[RECON_RUBRIC, REPORT_RUBRIC]},
+    {id:"attack", label:"Attack", tag:"lane 2", full:"Lane 2 — Squad Attack",               metric:TIME_METRIC, rubrics:[ATTACK_RUBRIC]},
+    {id:"ambush", label:"Ambush", tag:"lane 3", full:"Lane 3 — Squad Ambush",               metric:TIME_METRIC, rubrics:[AMBUSH_RUBRIC]}
   ];
 
   return {

@@ -25,15 +25,15 @@ Sheets not yet graded count as zero.
 Everything lives in `public/rubrics.js` — the format is documented at the top of that file.
 The server reads the same file, so a new lane needs no server change. Redeploy after editing.
 
-**Objective metric.** Any lane can carry one objective number (time, casualties, etc.):
+**Objective metric.** Every lane records the squad's total time on the lane, in minutes:
 
 ```js
-metric: {label: "Time to complete", unit: "min", better: "low"}   // or better: "high"
+metric: {label: "Total time on the lane", unit: "min", better: "low"}
 ```
 
-The squad's value is scored against the best value saved for that lane (best = 100) and blended
-with the rubric percentage at `METRIC_BLEND` (default 50/50). No value entered → rubric only.
-No lane has a metric switched on yet.
+The fastest time saved for a lane scores 100; every other squad scores `fastest ÷ its time × 100`.
+That is blended with the lane's GO percentage at `METRIC_BLEND` (default 50/50). No time entered →
+GO percentage only. Set `metric: null` on a lane to grade it on the rubric alone.
 
 ## Deploy on Railway
 
