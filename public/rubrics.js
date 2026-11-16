@@ -42,7 +42,7 @@
     "1": "DOG1 / 1 SQD", "2": "DOG1 / 2 SQD",
     "3": "DOG2 / 1 SQD", "4": "DOG2 / 2 SQD",
     "5": "DOG3 / 1 SQD", "6": "DOG3 / 2 SQD",
-    "7": "SAPPER"
+    "7": "MORTAR"
   };
 
   /* TLP rubric carried over from the Squad LFX scorecard:
@@ -244,7 +244,20 @@
     {id:"tab3", label:"DOG CMD Grader", tag:"Report",               tasks:["report"]}
   ];
 
+  /* Strict time parser shared by the console and the server. Accepts only a plain positive
+     number of minutes ("47" or "47.5"). Returns null for anything else — "47:30", "47,5",
+     "1e3" and "30 min" are refused rather than silently read as a different number. */
+  function parseMinutes(v) {
+    if (typeof v === "number") v = String(v);
+    if (typeof v !== "string") return null;
+    v = v.trim();
+    if (!/^\d{1,5}(\.\d{1,3})?$/.test(v)) return null;
+    var n = parseFloat(v);
+    return n > 0 ? n : null;
+  }
+
   return {
+    parseMinutes: parseMinutes,
     TITLE: "Advanced Squad STX Scorecard",
     UNIT: "D Co, 2-506 IN",
     SQUADS: SQUADS,

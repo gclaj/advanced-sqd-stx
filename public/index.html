@@ -315,9 +315,7 @@ function pctOf(sec, data){
 function metricOf(sec, d){
   var m = isLane(sec) ? LANE_BY_ID[sec].metric : null;
   if(!m || !d) return null;
-  var v = parseFloat(d.metric);
-  if(!isFinite(v) || v <= 0) return null;
-  return v;
+  return CFG.parseMinutes(d.metric);
 }
 var TIMED = LANES.filter(function(l){ return l.metric; }).map(function(l){ return l.id; });
 function fastest(sec){
@@ -508,7 +506,7 @@ function renderSheet(sec){
       if(ri === 0 && def.metric){
         var m = def.metric;
         html += '<div class="formrow" style="margin:12px 0 8px">';
-        html += '<div class="field"><label for="metric-'+sec+'">'+esc(m.label)+(m.unit?' ('+esc(m.unit)+')':'')+' — required</label><input id="metric-'+sec+'" data-act="field" data-field="metric" data-sec="'+sec+'" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 47.5" value="'+esc(data.metric)+'"></div>';
+        html += '<div class="field"><label for="metric-'+sec+'">'+esc(m.label)+(m.unit?' ('+esc(m.unit)+')':'')+' — required</label><input id="metric-'+sec+'" data-act="field" data-field="metric" data-sec="'+sec+'" type="text" inputmode="decimal" autocomplete="off" placeholder="minutes, e.g. 47.5" value="'+esc(data.metric)+'"></div>';
         html += '<div class="field" style="flex:0 1 auto"><label>Fastest saved</label><div class="datechip" style="font-weight:700;font-variant-numeric:tabular-nums">'+esc(metricChipText(sec))+'</div></div>';
         html += '</div>';
       }
@@ -663,7 +661,7 @@ function doSave(tabId){
   if(!todo.length){ toast("Nothing new to save on this tab."); return; }
   var missing = todo.filter(function(sec){ return isLane(sec) && LANE_BY_ID[sec].metric && metricOf(sec, getWorking(sq, sec)) === null; });
   if(missing.length){
-    toast("Enter the total time on the lane (minutes) for " + missing.map(function(sec){ return secDef(sec).label; }).join(" and ") + " before saving.");
+    toast("Enter the total time on the lane for " + missing.map(function(sec){ return secDef(sec).label; }).join(" and ") + " as a number of minutes, e.g. 47.5 (not 47:30).");
     var f = document.getElementById("metric-" + missing[0]);
     if(f){ f.focus(); f.scrollIntoView({block:"center"}); }
     return;

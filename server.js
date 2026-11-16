@@ -76,7 +76,7 @@ http
             }
           } else {
             if (!data || typeof data !== "object" || data.scores === null || typeof data.scores !== "object") throw new Error();
-            if (TIMED.indexOf(section) >= 0 && !(parseFloat(data.metric) > 0)) throw new Error();
+            if (TIMED.indexOf(section) >= 0 && config.parseMinutes(data.metric) === null) throw new Error();
             if (!state.squads[squad]) state.squads[squad] = {};
             state.squads[squad][section] = data;
           }
