@@ -1,0 +1,12 @@
+{
+  "name": "advanced-sqd-stx",
+  "version": "1.0.0",
+  "description": "Advanced squad STX grading console - D Co, 2-506 IN",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
