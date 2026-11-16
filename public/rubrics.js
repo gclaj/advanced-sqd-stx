@@ -235,9 +235,9 @@
 
   /* The evaluator's grading tabs. Every task id (and "tlp") appears on exactly one tab. */
   var GRADE_TABS = [
-    {id:"tab1", label:"Tab 1", tag:"TLP · Linkup · Recon", tasks:["tlp", "linkup", "recon"]},
-    {id:"tab2", label:"Tab 2", tag:"Attack · Ambush",      tasks:["attack", "ambush"]},
-    {id:"tab3", label:"Tab 3", tag:"Report",               tasks:["report"]}
+    {id:"tab1", label:"DOG1 Grader",    tag:"TLP · Linkup · Recon", tasks:["tlp", "linkup", "recon"]},
+    {id:"tab2", label:"DOG3 Grader",    tag:"Attack · Ambush",      tasks:["attack", "ambush"]},
+    {id:"tab3", label:"DOG CMD Grader", tag:"Report",               tasks:["report"]}
   ];
 
   return {
