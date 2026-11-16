@@ -12,7 +12,7 @@ Scores save to the server instantly and the squad rankings update live for every
 |---|---|---|
 | TLP | Squad Leader OPORD evaluation sheet (24 measures, 8 critical) | GO / NO-GO, T/P/U |
 | Lane 1 — Recon | 171-123-1301 steps 1.f, 3.a, 3.c, 3.d, 3.e(10), 8, 9; 34-CO-0010 step 3.a–g (SALUTE) | 0–3 per measure |
-| Lane 2 — Attack | T&EO 07-SQD-1092, steps 1–9 (live-fire step 10 omitted) | 0–3 per measure, T/P/U |
+| Lane 2 — Attack | T&EO 07-SQD-1092 steps 1, 2, 2.b(2), 2.b(3), 2.b(9), 2.b(10), 6.c, 6.d, 6.d(2), 6.d(4), 6.d(5), 6.e(4), 6.e(5), 6.e(6), 6.e(7), 6.e(10), 8 | 0–3 per measure, T/P/U |
 | Lane 3 — Ambush | T&EO 07-SQD-9010, steps 1–10 | 0–3 per measure, T/P/U |
 
 Lane measures: 0 Not observed · 1 Did not meet standard · 2 Met standard · 3 Exceeded standard.
