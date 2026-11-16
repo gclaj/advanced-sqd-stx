@@ -13,9 +13,9 @@ the tabs only group the sheets, and one Save sends every sheet on the tab that w
 
 | Tab | Task | Source | Measures | Timed |
 |---|---|---|---|---|
-| DOG1 Grader | TLP | Squad Leader OPORD evaluation sheet | 24 (8 critical) | no |
-| DOG1 Grader | Conduct a Linkup | T&EO 07-PLT-1063 steps 2.b(1)(a), 2.b(2), 2.b(3), 2.b(4)(b-k), 2.b(8), applied at squad level | 14 | no |
 | DOG1 Grader | Conduct a Zone Reconnaissance | 171-123-1301 steps 1.f, 3.a, 3.c, 3.d, 3.e(10), 8, 9 | 7 | yes |
+| DOG1 Grader | Conduct a Linkup | T&EO 07-PLT-1063 steps 2.b(1)(a), 2.b(2), 2.b(3), 2.b(4)(b-k), 2.b(8), applied at squad level | 14 | no |
+| DOG1 Grader | TLP | Squad Leader OPORD evaluation sheet | 24 (8 critical) | no |
 | DOG3 Grader | Conduct an Attack | T&EO 07-SQD-1092 steps 1, 2, 2.b(2), 2.b(3), 2.b(9), 2.b(10), 6.c, 6.d, 6.d(2), 6.d(4), 6.d(5), 6.e(4), 6.e(5), 6.e(6), 6.e(7), 6.e(10), 8 | 17 | yes |
 | DOG3 Grader | Conduct an Ambush | T&EO 07-SQD-9010 steps 2.b(1)(a-b), 2.b(2)(b-e), 2.b(4), 2.b(7)(b)1-4, 2.b(7)(d-g), 2.b(7)(i-j), 5.g(8)(a-c), 5.g(9), 5.g(12), 5.h, 6.a, 6.b, 6.e, 7.e, 7.f(1), 7.f(3), 7.g(1-2), 7.g(4), 9.a(2)(a), 9.b(5-7), 10 | 37 | yes |
 | DOG CMD Grader | Report Tactical Information | T&EO 34-CO-0010 step 3.a–g (SALUTE) | 7 | no |
