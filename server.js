@@ -36,6 +36,8 @@ const RUBRICS = fs.readFileSync(path.join(__dirname, "public", "rubrics.js"));
 
 const VALID_SQUADS = config.SQUADS;
 const VALID_SECTIONS = ["tlp"].concat(config.TASKS.map((l) => l.id));
+/* timed tasks cannot be saved without a time in minutes */
+const TIMED = config.TASKS.filter((l) => l.metric).map((l) => l.id);
 
 http
   .createServer((req, res) => {
@@ -74,6 +76,7 @@ http
             }
           } else {
             if (!data || typeof data !== "object" || data.scores === null || typeof data.scores !== "object") throw new Error();
+            if (TIMED.indexOf(section) >= 0 && !(parseFloat(data.metric) > 0)) throw new Error();
             if (!state.squads[squad]) state.squads[squad] = {};
             state.squads[squad][section] = data;
           }

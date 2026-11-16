@@ -11,9 +11,9 @@
      label: "Ambush",                 short name for the rankings column
      full:  "Conduct an Ambush",
      weight: 1,                       optional relative share of the non-TLP weight (default 1)
-     metric: {label:"Total time on the lane", unit:"min", better:"low"},
-                                      optional objective number; better:"low" or "high".
-                                      Omit or set null for a rubric-only task.
+     metric: {label:"Total time on the lane", unit:"min"},
+                                      makes the task timed: a time in minutes is required
+                                      to save it. Omit or set null for an untimed task.
      rubrics: [
        { id:"ambush", title:"Conduct an Ambush — Squad", sub:"T&EO 07-SQD-xxxx · ATP 3-21.8",
          teo:true,                    true = show the T&EO T/P/U matrix rating
@@ -24,8 +24,12 @@
          ]}
      ]
    }
-   Every measure on every sheet is rated GO or NO-GO; a task's score is the percentage
-   of its measures rated GO. */
+   Every measure on every sheet is rated GO or NO-GO; a task's GO % is the share of its
+   measures rated GO.
+
+   FINAL SCORE (lowest wins) = total minutes on the timed tasks x (1 + NO-GO share),
+   where NO-GO share = 1 - weighted GO %. TLP carries TLP_WEIGHT of the GO %; the other
+   tasks split the rest by their weight. */
 (function (root, factory) {
   var cfg = factory();
   if (typeof module === "object" && module.exports) module.exports = cfg;
@@ -223,8 +227,8 @@
     ]
   };
 
-  /* Objective metric on the timed tasks: total time on the lane, fastest squad = 100. */
-  var TIME_METRIC = {label:"Total time on the lane", unit:"min", better:"low"};
+  /* Timed tasks: total minutes on the lane, required to save the sheet. */
+  var TIME_METRIC = {label:"Total time on the lane", unit:"min"};
   var TASKS = [
     {id:"linkup", label:"Linkup", full:"Conduct a Linkup",                    metric:null,        rubrics:[LINKUP_RUBRIC]},
     {id:"recon",  label:"Recon",  full:"Conduct a Zone Reconnaissance",       metric:TIME_METRIC, rubrics:[RECON_RUBRIC]},
@@ -254,7 +258,6 @@
     },
     TASKS: TASKS,
     GRADE_TABS: GRADE_TABS,
-    TLP_WEIGHT: 0.20,   /* TLP share of the total; the other tasks split the rest by their weight */
-    METRIC_BLEND: 0.5   /* share of a timed task's score that comes from its objective metric */
+    TLP_WEIGHT: 0.20    /* TLP share of the weighted GO %; the other tasks split the rest by their weight */
   };
 });

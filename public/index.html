@@ -154,7 +154,6 @@ var TLP = CFG.TLP, TLP_ITEMS = TLP.items, LANES = CFG.TASKS, GRADE_TABS = CFG.GR
 var SQUADS = CFG.SQUADS, SQUAD_NAMES = CFG.SQUAD_NAMES;
 var TLP_CRITS = TLP_ITEMS.filter(function(it){ return it.crit; }).length;
 /* Every measure on every sheet is GO (1) or NO-GO (0). */
-var BLEND = CFG.METRIC_BLEND;
 var SECTION_IDS = ["tlp"].concat(LANES.map(function(l){ return l.id; }));
 var LANE_BY_ID = {};
 LANES.forEach(function(l){ LANE_BY_ID[l.id] = l; });
@@ -311,39 +310,33 @@ function pctOf(sec, data){
   var max = maxOf(sec);
   return max ? rawOf(sec, data).sum / max * 100 : null;
 }
-/* Objective metric: one number per timed task (minutes on the lane). Normalized against
-   the best value saved for the same task across all squads (best = 100), then blended
-   with the rubric percentage at METRIC_BLEND. No value entered -> rubric only. */
+/* Time: recon, attack and ambush each record total minutes on the lane (required to save).
+   A task's own score is simply its GO percentage; time enters only in the final score. */
 function metricOf(sec, d){
   var m = isLane(sec) ? LANE_BY_ID[sec].metric : null;
   if(!m || !d) return null;
   var v = parseFloat(d.metric);
-  if(!isFinite(v) || v < 0 || (m.better === "low" && v === 0)) return null;
+  if(!isFinite(v) || v <= 0) return null;
   return v;
 }
-function bestMetric(sec){
-  var low = LANE_BY_ID[sec].metric.better === "low", best = null;
+var TIMED = LANES.filter(function(l){ return l.metric; }).map(function(l){ return l.id; });
+function fastest(sec){
+  var best = null;
   SQUADS.forEach(function(sq){
     var v = metricOf(sec, getSaved(sq, sec));
-    if(v !== null && (best === null || (low ? v < best : v > best))) best = v;
+    if(v !== null && (best === null || v < best)) best = v;
   });
   return best;
 }
-function metricPctOf(sq, sec){
-  var v = metricOf(sec, getSaved(sq, sec));
-  if(v === null) return null;
-  var best = bestMetric(sec);
-  if(LANE_BY_ID[sec].metric.better === "low") return best / v * 100;
-  return best > 0 ? v / best * 100 : 0;
-}
-function sectionScore(sq, sec){
-  var saved = getSaved(sq, sec);
-  if(!saved) return null;
-  var base = pctOf(sec, saved);
-  if(base === null || !isLane(sec)) return base;
-  var mp = metricPctOf(sq, sec);
-  if(mp === null) return base;
-  return base * (1 - BLEND) + mp * BLEND;
+function sectionScore(sq, sec){ return pctOf(sec, getSaved(sq, sec)); }
+/* Total minutes across the timed tasks. complete = every timed task has a saved time. */
+function timeOf(sq){
+  var sum = 0, n = 0;
+  TIMED.forEach(function(sec){
+    var v = metricOf(sec, getSaved(sq, sec));
+    if(v !== null){ sum += v; n++; }
+  });
+  return {sum:sum, n:n, complete: n === TIMED.length && n > 0};
 }
 /* T/P/U per the grading standard: U = any critical NO-GO; T = all criticals GO and
    >= threshold GO; P = all criticals GO but fewer. null until fully rated. */
@@ -361,6 +354,7 @@ function critGoCount(data){
   var scores = (data && data.scores) || {};
   return TLP_ITEMS.filter(function(it){ return it.crit && scores[it.id] === 1; }).length;
 }
+/* Weighted GO percentage across all sheets (0-100). Sheets not yet saved count as all NO-GO. */
 function compositeOf(sq){
   var any = false, total = 0;
   SECTION_IDS.forEach(function(sec){
@@ -369,6 +363,19 @@ function compositeOf(sq){
   });
   return any ? total : null;
 }
+/* FINAL SCORE — lower is better.
+   final = total minutes on the timed lanes x (1 + NO-GO share),
+   where NO-GO share = 1 - weighted GO percentage / 100.
+   All GO leaves the raw time; every NO-GO inflates it, up to double.
+   null until every timed lane has a saved time. */
+function finalOf(sq){
+  var t = timeOf(sq);
+  if(!t.complete) return null;
+  var go = compositeOf(sq) || 0;
+  return t.sum * (2 - go / 100);
+}
+function allSaved(sq){ return SECTION_IDS.every(function(sec){ return !!getSaved(sq, sec); }); }
+function fmtMin(v){ return (Math.round(v * 100) / 100).toString(); }
 function fmt(v, dec){ return v===null||v===undefined ? "—" : v.toFixed(dec===undefined?1:dec); }
 function pctTxt(w){ return (Math.round(w * 1000) / 10) + "%"; }
 
@@ -470,12 +477,9 @@ function renderItems(sec, items, groups, data){
   return html;
 }
 
-function metricChipText(sec, d){
-  var m = LANE_BY_ID[sec].metric, v = metricOf(sec, d);
-  if(v === null) return "—";
-  var best = bestMetric(sec);
-  if(best === null) return "first entry";
-  return "best saved: " + best + (m.unit ? " " + m.unit : "");
+function metricChipText(sec){
+  var best = fastest(sec);
+  return best === null ? "—" : fmtMin(best) + " min";
 }
 
 /* One task's grade sheet (a card). The tab's single save bar is rendered by renderGrade. */
@@ -504,8 +508,8 @@ function renderSheet(sec){
       if(ri === 0 && def.metric){
         var m = def.metric;
         html += '<div class="formrow" style="margin:12px 0 8px">';
-        html += '<div class="field"><label for="metric-'+sec+'">'+esc(m.label)+(m.unit?' ('+esc(m.unit)+')':'')+' — '+pctTxt(BLEND)+' of this score</label><input id="metric-'+sec+'" data-act="field" data-field="metric" data-sec="'+sec+'" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 47.5" value="'+esc(data.metric)+'"></div>';
-        html += '<div class="field" style="flex:0 1 auto"><label>'+(m.better==="low"?"Lower is better":"Higher is better")+'</label><div class="datechip" id="metricchip-'+sec+'" style="font-weight:700;font-variant-numeric:tabular-nums">'+esc(metricChipText(sec, data))+'</div></div>';
+        html += '<div class="field"><label for="metric-'+sec+'">'+esc(m.label)+(m.unit?' ('+esc(m.unit)+')':'')+' — required</label><input id="metric-'+sec+'" data-act="field" data-field="metric" data-sec="'+sec+'" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 47.5" value="'+esc(data.metric)+'"></div>';
+        html += '<div class="field" style="flex:0 1 auto"><label>Fastest saved</label><div class="datechip" style="font-weight:700;font-variant-numeric:tabular-nums">'+esc(metricChipText(sec))+'</div></div>';
         html += '</div>';
       }
       html += renderItems(sec, rubric.items, rubric.groups, data);
@@ -519,49 +523,49 @@ function renderSheet(sec){
 
 function formulaText(){
   var parts = SECTION_IDS.map(function(sec){ return esc(secDef(sec).label)+' × '+pctTxt(W[sec]); });
-  var txt = 'Every measure is GO or NO-GO, and each sheet scores the percentage of its measures rated GO. ';
-  if(LANES.length){
-    if(LANES.some(function(l){ return l.metric; })){
-      txt += 'Where a task is timed, its score is <code>'+pctTxt(1-BLEND)+' rubric + '+pctTxt(BLEND)+' time score</code>, the time score being the fastest time saved for that task divided by the squad’s own time (fastest squad = 100). A timed task with no time entered scores on the rubric alone. ';
-    }
-  }
-  txt += 'Weighted total: '+parts.map(function(x){ return '<code>'+x+'</code>'; }).join(' + ')+' — maximum possible 100.0. Sheets not yet graded count as zero. Rankings update for everyone the moment an evaluator saves.';
-  return txt;
+  return '<b>Lowest score wins.</b> <code>Score = total time × (1 + NO-GO share)</code>. '
+    + 'Total time is the minutes on '+TIMED.map(function(sec){ return esc(secDef(sec).label); }).join(', ')+' added together. '
+    + 'NO-GO share is <code>1 − weighted GO %</code>, with GO % weighted '+parts.map(function(x){ return '<code>'+x+'</code>'; }).join(' + ')+'. '
+    + 'A squad that is all GO keeps its raw time; every NO-GO inflates it, up to double. '
+    + 'A squad is ranked once all '+TIMED.length+' times are saved; sheets not yet saved count as NO-GO, and a score marked * is still missing a sheet. '
+    + 'Rankings update for everyone the moment an evaluator saves.';
 }
 
 function renderRank(){
   var rows = SQUADS.map(function(sq){
-    var row = {sq:sq, total:compositeOf(sq), s:{}};
+    var row = {sq:sq, go:compositeOf(sq), time:timeOf(sq), score:finalOf(sq), s:{}};
     SECTION_IDS.forEach(function(sec){ row.s[sec] = sectionScore(sq, sec); });
     return row;
   });
   rows.sort(function(a,b){
-    if(a.total===null && b.total===null) return SQUADS.indexOf(a.sq) - SQUADS.indexOf(b.sq);
-    if(a.total===null) return 1;
-    if(b.total===null) return -1;
-    return b.total - a.total;
+    if(a.score===null && b.score===null) return SQUADS.indexOf(a.sq) - SQUADS.indexOf(b.sq);
+    if(a.score===null) return 1;
+    if(b.score===null) return -1;
+    return a.score - b.score;
   });
-  var html = '<section class="card"><h2>Live Squad Rankings</h2><div class="tablewrap"><table class="rank" style="min-width:'+(230+SECTION_IDS.length*66)+'px">';
-  html += '<thead><tr><th>#</th><th>Squad</th>';
+  var html = '<section class="card"><h2>Live Squad Rankings<small>lowest score wins</small></h2><div class="tablewrap"><table class="rank" style="min-width:'+(410+SECTION_IDS.length*62)+'px">';
+  html += '<thead><tr><th>#</th><th>Squad</th><th>Score</th><th>Time</th><th>GO %</th>';
   SECTION_IDS.forEach(function(sec){ html += '<th>'+esc(secDef(sec).label)+'</th>'; });
-  html += '<th>Total</th></tr></thead><tbody>';
+  html += '</tr></thead><tbody>';
   var rank = 0, prevShown = null;
   rows.forEach(function(r, i){
-    var ranked = r.total!==null;
+    var ranked = r.score!==null;
     if(ranked){
-      var shown = r.total.toFixed(1);
-      if(shown !== prevShown) rank = i+1; /* tied totals share a rank */
+      var shown = r.score.toFixed(1);
+      if(shown !== prevShown) rank = i+1; /* tied scores share a rank */
       prevShown = shown;
     }
     html += '<tr class="'+(ranked && rank===1 ? "first":"")+'">';
     html += '<td>'+(ranked?'<span class="rk">'+rank+'</span>':'<span class="dim">—</span>')+'</td>';
     html += '<td class="sqname">'+esc(squadName(r.sq))+'</td>';
+    html += '<td class="total'+(ranked?'':' dim')+'">'+fmt(r.score)+(ranked && !allSaved(r.sq)?'*':'')+'</td>';
+    html += '<td'+(r.time.n?'':' class="dim"')+'>'+(r.time.n ? fmtMin(r.time.sum)+(r.time.complete?'':' <span class="dim">('+r.time.n+'/'+TIMED.length+')</span>') : '—')+'</td>';
+    html += '<td'+(r.go===null?' class="dim"':'')+'>'+fmt(r.go)+'</td>';
     SECTION_IDS.forEach(function(sec){
       var v = r.s[sec];
       var trate = sec==="tlp" ? tlpRating(getSaved(r.sq, "tlp")) : null;
       html += '<td'+(v===null?' class="dim"':'')+'>'+fmt(v)+(trate?' <span class="dim">'+trate+'</span>':'')+'</td>';
     });
-    html += '<td class="total'+(r.total===null?' dim':'')+'">'+fmt(r.total)+'</td>';
     html += '</tr>';
   });
   html += '</tbody></table></div>';
@@ -602,11 +606,7 @@ function renderReport(){
     var metricTxt = '';
     if(isLane(sec) && def.metric){
       var mv = metricOf(sec, saved);
-      if(mv !== null){
-        metricTxt = ' · rubric '+(r.sum/max*100).toFixed(1)+'% · '+esc(def.metric.label.toLowerCase())+' '+mv+(def.metric.unit?' '+esc(def.metric.unit):'')+' (time score '+metricPctOf(sq, sec).toFixed(1)+') · combined = '+pctTxt(1-BLEND)+' rubric + '+pctTxt(BLEND)+' time';
-      } else {
-        metricTxt = ' · no '+esc(def.metric.label.toLowerCase())+' entered — rubric % only';
-      }
+      metricTxt = ' · '+esc(def.metric.label.toLowerCase())+' '+(mv===null ? 'not entered' : fmtMin(mv)+' min');
     }
     html += '<div class="repmeta">'+r.sum+' / '+max+' GO · weight '+pctTxt(W[sec])
          + metricTxt
@@ -629,9 +629,13 @@ function renderReport(){
     if(saved.notes) html += '<div class="repnotes">'+esc(saved.notes)+'</div>';
     html += '</section>';
   });
-  var total = compositeOf(sq);
-  html += '<section class="card"><div class="rephead"><h2 style="margin-bottom:0">Weighted Total</h2><span class="pct">'+fmt(total)+'</span></div>';
-  html += '<p class="formula">'+SECTION_IDS.map(function(sec){ return fmt(sectionScore(sq,sec))+' × '+pctTxt(W[sec]); }).join('&ensp;+&ensp;')+(total===null?'':'&ensp;=&ensp;<b>'+fmt(total)+'</b>')+'</p></section>';
+  var go = compositeOf(sq), tm = timeOf(sq), fin = finalOf(sq);
+  html += '<section class="card"><div class="rephead"><h2 style="margin-bottom:0">Final Score<small>lowest wins</small></h2><span class="pct">'+fmt(fin)+(fin!==null && !allSaved(sq)?'*':'')+'</span></div>';
+  html += '<p class="formula">Weighted GO %: '+SECTION_IDS.map(function(sec){ return fmt(sectionScore(sq,sec))+' × '+pctTxt(W[sec]); }).join('&ensp;+&ensp;')+'&ensp;=&ensp;<b>'+fmt(go)+'</b><br>'
+       + 'Total time: '+TIMED.map(function(sec){ var v = metricOf(sec, getSaved(sq, sec)); return esc(secDef(sec).label)+' '+(v===null?'—':fmtMin(v)); }).join('&ensp;+&ensp;')+(tm.complete?'&ensp;=&ensp;<b>'+fmtMin(tm.sum)+' min</b>':'')+'<br>'
+       + (fin===null ? 'Score appears once all '+TIMED.length+' lane times are saved.'
+          : 'Score: '+fmtMin(tm.sum)+' × (1 + '+((100-(go||0))/100).toFixed(3)+')&ensp;=&ensp;<b>'+fmt(fin)+'</b>'+(allSaved(sq)?'':' *  —  a sheet is still unsaved and counts as NO-GO'))
+       + '</p></section>';
   return html;
 }
 
@@ -657,6 +661,13 @@ function doSave(tabId){
   var sq = ui.squad;
   var todo = gt.tasks.filter(function(sec){ return hasDraft(sq, sec); });
   if(!todo.length){ toast("Nothing new to save on this tab."); return; }
+  var missing = todo.filter(function(sec){ return isLane(sec) && LANE_BY_ID[sec].metric && metricOf(sec, getWorking(sq, sec)) === null; });
+  if(missing.length){
+    toast("Enter the total time on the lane (minutes) for " + missing.map(function(sec){ return secDef(sec).label; }).join(" and ") + " before saving.");
+    var f = document.getElementById("metric-" + missing[0]);
+    if(f){ f.focus(); f.scrollIntoView({block:"center"}); }
+    return;
+  }
   saving = true; render();
   var chain = Promise.resolve();
   todo.forEach(function(sec){ chain = chain.then(function(){ return postSheet(sq, sec); }); });
@@ -696,10 +707,6 @@ app.addEventListener("input", function(ev){
     var data = getWorking(ui.squad, sec);
     data[fieldName] = el.value;
     setWorking(ui.squad, sec, data);
-    if(fieldName === "metric"){
-      var chip = document.getElementById("metricchip-"+sec);
-      if(chip) chip.textContent = metricChipText(sec, data);
-    }
     /* update draft chip without full re-render (keeps focus) */
     var bar = app.querySelector(".savebar .score");
     if(bar && !bar.querySelector(".draft") && hasDraft(ui.squad, sec)){

@@ -20,11 +20,23 @@ the tabs only group the sheets, and one Save sends every sheet on the tab that w
 | DOG3 Grader | Conduct an Ambush | T&EO 07-SQD-9010 steps 2.b(1)(a-b), 2.b(2)(b-e), 2.b(4), 2.b(7)(b)1-4, 2.b(7)(d-g), 2.b(7)(i-j), 5.g(8)(a-c), 5.g(9), 5.g(12), 5.h, 6.a, 6.b, 6.e, 7.e, 7.f(1), 7.f(3), 7.g(1-2), 7.g(4), 9.a(2)(a), 9.b(5-7), 10 | 37 | yes |
 | DOG CMD Grader | Report Tactical Information | T&EO 34-CO-0010 step 3.a–g (SALUTE) | 7 | no |
 
-Every measure is GO or NO-GO. A task's score is the percentage of its measures rated GO.
+Every measure is GO or NO-GO. A task's GO % is the share of its measures rated GO.
 TLP and the T&EO tasks also show a T/P/U rating.
 
-**Total (out of 100):** TLP 20%; the other five tasks split the remaining 80% equally, 16% each
-(or by each task's `weight`). Tasks not yet graded count as zero.
+## Scoring — lowest score wins
+
+```
+Score = total time × (1 + NO-GO share)
+```
+
+- **Total time** is the minutes on recon, attack and ambush added together. A timed sheet cannot be
+  saved without its time.
+- **NO-GO share** is `1 − weighted GO %`. GO % is weighted TLP 20%, the other five tasks 16% each
+  (or by each task's `weight`).
+- A squad that is all GO keeps its raw time; every NO-GO inflates it, up to double.
+  Example: 160 minutes at 92.1% GO scores 160 × 1.079 = 172.7.
+- A squad is ranked once all three times are saved. Sheets not yet saved count as NO-GO; a score
+  marked `*` is still missing a sheet.
 
 ## Changing rubrics, tasks, tabs, squads or weights
 
@@ -32,15 +44,8 @@ Everything lives in `public/rubrics.js` — the format is documented at the top 
 `TASKS` defines what is graded; `GRADE_TABS` says which tab each task sits on.
 The server reads the same file, so a new task needs no server change. Redeploy after editing.
 
-**Objective metric.** Recon, attack and ambush record the squad's total time on the lane, in minutes:
-
-```js
-metric: {label: "Total time on the lane", unit: "min", better: "low"}
-```
-
-The fastest time saved for a task scores 100; every other squad scores `fastest ÷ its time × 100`.
-That is blended with the task's GO percentage at `METRIC_BLEND` (default 50/50). No time entered →
-GO percentage only. Set `metric: null` on a task to grade it on the rubric alone.
+**Timed tasks.** A task is timed when it carries `metric: {label: "Total time on the lane", unit: "min"}`.
+Set `metric: null` to make a task untimed; its time then drops out of the total.
 
 ## Deploy on Railway
 
