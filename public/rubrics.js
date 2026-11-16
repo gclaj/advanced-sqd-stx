@@ -195,12 +195,46 @@
 
   /* Tactical lanes — see LANE FORMAT above. Set metric:null on a lane to grade it
      on the rubric alone. */
-  /* Objective metric on every lane: total time on the lane, fastest squad = 100. */
+  /* Conduct a Linkup. T&EO 07-PLT-1063 (effective 16 Sep 2024), ATP 3-21.8.
+     A platoon task graded here at squad level, so "platoon leader" reads as the leader of
+     the element being evaluated. Sub-measures of a critical (+) or leader (*) parent step
+     carry the parent's mark. */
+  var LINKUP_RUBRIC = {
+    id: "linkup", title: "Conduct a Linkup", sub: "T&EO 07-PLT-1063 · ATP 3-21.8 · applied at squad level",
+    teo: true, groups: TEO_GROUPS,
+    items: [
+      {id:"l1",  g:"pl", num:"1",                    name:"Situational awareness",              d:"Gains situational awareness through intelligence products and graphics (threat template, likely and most dangerous COAs, order of battle, terrain and weather products); maintains it through reconnaissance, battle tracking, and friendly/threat graphics — spot reports, SUAS, sensors, information collection reporting."},
+      {id:"l2",  g:"pl", num:"2a",        crit:true, name:"WARNORD issued",                     d:"General location of the linkup, initial task organization, initial timeline, reconnaissance and movement to initiate, planning and preparation instructions including the planning timeline, information requirements."},
+      {id:"l3",  g:"pl", num:"2b(1)",     crit:true, name:"Mission analysis",                   d:"Receives an updated report showing the location of forward and adjacent friendly elements; receives an updated enemy situational template for fratricide prevention and protection; conducts terrain analysis (observation, avenues of approach, key terrain, obstacles, cover and concealment)."},
+      {id:"l4",  g:"pl", num:"2b(2)",     crit:true, name:"Reconnaissance & linkup points",     d:"Coordinates the location and criteria for linkup with HQ; uses all assigned or available reconnaissance assets (UAS, robotics, sensors, other equipment); identifies primary and alternate linkup points."},
+      {id:"l5",  g:"pl", num:"2b(3)",     crit:true, name:"Linkup plan coordinated with the linkup elements", d:"Covers enemy contact before, during, and after linkup; length of time to wait at the linkup point; actions if some elements fail to link up; alternate linkup points and rally points; criteria for linkup point occupation, such as time or arrival of a specified percentage of the element."},
+      {id:"l6",  g:"pl", num:"2b(4)",     crit:true, name:"Tactical information exchanged",     d:"Known enemy situation; number and types of friendly elements or personnel; disposition of stationary forces; routes to the linkup and rally points; fire control measures; near and far recognition signals; communications information; combat support coverage; sustainment responsibilities and procedures; final location of the linkup point and rally point; any special coordination (maneuver instructions, requests for medical support)."},
+      {id:"l7",  g:"pl", num:"2b(5-7)",   crit:true, name:"Command relationship, follow-on actions & graphics", d:"Coordinates the command relationship with the linkup element; coordinates actions following the linkup; exchanges graphic control measures."},
+      {id:"l8",  g:"pl", num:"2b(8)",     crit:true, name:"Linkup point occupation criteria",   d:"Determines how the linkup point will be occupied: far recognition signal by voice or digital communications; near recognition by visual or voice signals; movement to the linkup point; local security at the linkup point; strict fire control measures to prevent fratricide; additional coordination and linkup activities as necessary."},
+      {id:"l9",  g:"pl", num:"2b(9), 2c", crit:true, name:"Fires coordination & risk management", d:"Coordinates direct fires and indirect fire support; integrates risk management throughout TLP."},
+      {id:"l10", g:"pl", num:"3",         crit:true, name:"OPORD issued",                       d:"The leader issues the operation order."},
+      {id:"l11", g:"pl", num:"4",         ldr:true,  name:"Confirmation briefs",                d:"Conducted immediately after the OPORD — subordinates understand the commander's intent, their specific tasks, the concept of the operation, and how their mission relates to other units' missions."},
+      {id:"l12", g:"pr", num:"5a",        ldr:true,  name:"Communication plan with the other element", d:"Establishes a communication plan with the other element to exchange radio frequencies, net identifications, and recognition signals."},
+      {id:"l13", g:"pr", num:"5b-c",      ldr:true,  name:"Backbrief & rehearsals",             d:"Backbrief with the commander before rehearsals if necessary; rehearses actions on enemy contact, loss of communications, recognition signals, and occupying the linkup point."},
+      {id:"l14", g:"pr", num:"5d-g",      ldr:true,  name:"PCCs / PCIs, supervision, coordination & FRAGORDs", d:"Conducts precombat checks and inspections; supervises subordinates' TLP and continues priorities of work; finalizes coordination with adjacent and supporting units (passage of lines, combat enablers); issues FRAGORDs for changes identified during reconnaissance and rehearsals."},
+      {id:"l15", g:"ex", num:"6a(1)(a)",  crit:true, name:"First element: security team confirms the linkup point", d:"Each element moves to a point short of the linkup point and establishes a rally point. The first element sends a security team forward to confirm the exact location of the linkup point; clears the immediate area around it; marks it with the coordinated recognition signal; positions security teams in covered and concealed positions that overwatch it; returns to the linkup rally point and brings the remainder of the element forward."},
+      {id:"l16", g:"ex", num:"6a(1)(b)",  crit:true, name:"First element occupies the linkup point", d:"The remainder of the first element moves tactically to the linkup point; establishes a perimeter defense and becomes the stationary element; prepares to accept the moving element; establishes communications with the moving element."},
+      {id:"l17", g:"ex", num:"6a(2)",     crit:true, name:"Second element makes contact and moves in", d:"Sends a security team forward to confirm the exact location of the linkup point; makes contact with the stationary element — gives the far recognition signal, then advances and exchanges near recognition signals at the linkup point; returns to the linkup rally point and brings the remainder forward; the remainder moves tactically to the linkup point and is incorporated into the perimeter defense."},
+      {id:"l18", g:"ex", num:"6a(3-4)",   crit:true, name:"Linkup conducted; tasks and sectors assigned", d:"The elements conduct the linkup; the second element leader coordinates with the first element leader and assigns tasks and sectors to subordinate elements based on that coordination."},
+      {id:"l19", g:"ex", num:"6b",        crit:true, name:"Reports linkup complete",            d:"The leader reports the linkup completion to HQ."},
+      {id:"l20", g:"as", num:"7",         ldr:true,  name:"Follow-through",                     d:"Continuously monitors the linkup to collect relevant information, including the communication, information exchange, and recognition signal plans; evaluates progress toward end-state conditions and objectives; directs adjustments to stay aligned with the commander's intent; receives updates on the location and status of all elements, including attachments."},
+      {id:"l21", g:"as", num:"8",                    name:"Consolidates and reorganizes",       d:"The element consolidates and reorganizes as necessary."},
+      {id:"l22", g:"as", num:"9",         ldr:true,  name:"Reports status",                     d:"The leader reports the element's status and continues operations according to the order and the commander's guidance."}
+    ]
+  };
+
+  /* Objective metric on the timed lanes: total time on the lane, fastest squad = 100. */
   var TIME_METRIC = {label:"Total time on the lane", unit:"min", better:"low"};
   var LANES = [
     {id:"recon",  label:"Recon",  tag:"lane 1", full:"Lane 1 — Area / Zone Reconnaissance", metric:TIME_METRIC, rubrics:[RECON_RUBRIC, REPORT_RUBRIC]},
     {id:"attack", label:"Attack", tag:"lane 2", full:"Lane 2 — Squad Attack",               metric:TIME_METRIC, rubrics:[ATTACK_RUBRIC]},
-    {id:"ambush", label:"Ambush", tag:"lane 3", full:"Lane 3 — Squad Ambush",               metric:TIME_METRIC, rubrics:[AMBUSH_RUBRIC]}
+    {id:"ambush", label:"Ambush", tag:"lane 3", full:"Lane 3 — Squad Ambush",               metric:TIME_METRIC, rubrics:[AMBUSH_RUBRIC]},
+    {id:"linkup", label:"Linkup", tag:"task",   full:"Conduct a Linkup",                    metric:null,        rubrics:[LINKUP_RUBRIC]}
   ];
 
   return {
