@@ -66,8 +66,6 @@ header.top{display:flex;align-items:center;gap:14px;padding:8px 2px 14px}
 .ghead{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.11em;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:6px 10px;margin-top:14px}
 .ghead:first-of-type{margin-top:2px}
 .ghead + .item{border-top:none}
-.crit{display:inline-block;font-family:'Public Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--nogo);border:1px solid var(--nogo);border-radius:4px;padding:1px 5px;margin-left:7px;vertical-align:2px}
-.ldr{display:inline-block;font-family:'Public Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:1px 5px;margin-left:7px;vertical-align:2px}
 .rubhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:18px 0 4px}
 .rubhead:first-of-type{margin-top:6px}
 .rubtitle{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.06em}
@@ -438,7 +436,7 @@ function renderGrade(){
 
   var gt = gradeTab(ui.gtab);
   if(gt){
-    html += '<p class="rubricnote" style="margin:0 2px 12px">Every measure is rated GO or NO-GO. <span class="crit">+ critical</span> measures must all be GO for a T; <span class="ldr">★ leader</span> measures feed the leader column of the T/P/U matrix. Save sends every sheet on this tab that you have changed.</p>';
+    html += '<p class="rubricnote" style="margin:0 2px 12px">Every measure is rated GO or NO-GO. Save sends every sheet on this tab that you have changed.</p>';
     var sum = 0, max = 0, rated = 0, dirtyAny = false;
     gt.tasks.forEach(function(sec){
       html += renderSheet(sec);
@@ -464,8 +462,6 @@ function renderItems(sec, items, groups, data){
     }
     var numTxt = it.num ? it.num : String(i+1).padStart(2,"0");
     html += '<div class="item"><div><div class="iname"><span class="num">'+esc(numTxt)+'</span>'+esc(it.name)
-         + (it.crit?'<span class="crit">+ critical</span>':'')
-         + (it.ldr?'<span class="ldr">★ leader</span>':'')
          + '</div><div class="idesc">'+esc(it.d)+'</div></div>';
     html += '<div class="gng">';
     html += '<button class="go '+(v===1?"on":"")+'" data-act="rate" data-sec="'+sec+'" data-item="'+it.id+'" data-val="1" aria-pressed="'+(v===1)+'">Go</button>';
@@ -577,7 +573,7 @@ function repItemsHtml(items, saved){
   items.forEach(function(it){
     var v = saved.scores ? saved.scores[it.id] : undefined;
     var res = v===1 ? '<span class="res go">GO</span>' : v===0 ? '<span class="res nogo">NO-GO</span>' : '<span class="res dim">—</span>';
-    html += '<li><span>'+(it.num?'<span class="num">'+esc(it.num)+'</span> ':'')+esc(it.name)+(it.crit?' <span class="crit">+</span>':'')+(it.ldr?' <span class="ldr">★</span>':'')+'</span>'+res+'</li>';
+    html += '<li><span>'+(it.num?'<span class="num">'+esc(it.num)+'</span> ':'')+esc(it.name)+'</span>'+res+'</li>';
   });
   return html + '</ul>';
 }
