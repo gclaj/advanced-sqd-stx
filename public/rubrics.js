@@ -103,20 +103,17 @@
     ]
   };
 
-  /* Report Tactical Information, T&EO 34-CO-0010 (ATP 3-55.4, FM 6-99).
-     Only step 3 (the SALUTE report to higher) is graded, one measure per line 3.a-3.g.
-     Step 3 is a critical (+) step, so each line carries the critical mark. */
+  /* Enhanced LACE report, graded by the DOG CMD grader — one GO/NO-GO measure per line.
+     Unit reporting format, not a T&EO, so no critical/leader marks and no T/P/U.
+     The four base LACE lines are below; add the unit's "enhanced" lines as further items. */
   var REPORT_RUBRIC = {
-    id: "report", title: "Report Tactical Information — SALUTE", sub: "T&EO 34-CO-0010 step 3 · ATP 3-55.4 · FM 6-99",
-    teo: true, groups: null,
+    id: "report", title: "Enhanced LACE Report", sub: "Squad status report to higher · unit SOP",
+    teo: false, groups: null,
     items: [
-      {id:"t3a", num:"3a", crit:true, name:"Size",      d:"Expressed as a quantity or echelon."},
-      {id:"t3b", num:"3b", crit:true, name:"Activity",  d:"What is happening, as a concise bullet statement."},
-      {id:"t3c", num:"3c", crit:true, name:"Location",  d:"An 8- or 10-digit grid coordinate, or an address if appropriate."},
-      {id:"t3d", num:"3d", crit:true, name:"Unit",      d:"Who is performing the activity — designates the unit or identifies a group or individual."},
-      {id:"t3e", num:"3e", crit:true, name:"Time",      d:"When the activity was observed, or when it was initiated if ongoing."},
-      {id:"t3f", num:"3f", crit:true, name:"Equipment", d:"Describes or identifies any equipment."},
-      {id:"t3g", num:"3g", crit:true, name:"Remarks",   d:"Any other pertinent or time-sensitive information that must be passed."}
+      {id:"c1", num:"L", name:"Liquid",     d:"Reports the squad's water status."},
+      {id:"c2", num:"A", name:"Ammunition", d:"Reports the squad's ammunition status."},
+      {id:"c3", num:"C", name:"Casualties", d:"Reports the squad's casualty status."},
+      {id:"c4", num:"E", name:"Equipment",  d:"Reports the squad's equipment status."}
     ]
   };
 
@@ -234,14 +231,14 @@
     {id:"recon",  label:"Recon",  full:"Conduct a Zone Reconnaissance",       metric:TIME_METRIC, rubrics:[RECON_RUBRIC]},
     {id:"attack", label:"Attack", full:"Conduct an Attack",                   metric:TIME_METRIC, rubrics:[ATTACK_RUBRIC]},
     {id:"ambush", label:"Ambush", full:"Conduct an Ambush",                   metric:TIME_METRIC, rubrics:[AMBUSH_RUBRIC]},
-    {id:"report", label:"Report", full:"Report Tactical Information",         metric:null,        rubrics:[REPORT_RUBRIC]}
+    {id:"report", label:"LACE",   full:"Enhanced LACE Report",                metric:null,        rubrics:[REPORT_RUBRIC]}
   ];
 
   /* The evaluator's grading tabs. Every task id (and "tlp") appears on exactly one tab. */
   var GRADE_TABS = [
     {id:"tab1", label:"DOG1 Grader",    tag:"Recon · Linkup · TLP", tasks:["recon", "linkup", "tlp"]},
     {id:"tab2", label:"DOG3 Grader",    tag:"Attack · Ambush",      tasks:["attack", "ambush"]},
-    {id:"tab3", label:"DOG CMD Grader", tag:"Report",               tasks:["report"]}
+    {id:"tab3", label:"DOG CMD Grader", tag:"LACE Report",          tasks:["report"]}
   ];
 
   /* Strict time parser shared by the console and the server. Accepts only a plain positive
