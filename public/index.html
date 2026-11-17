@@ -485,7 +485,7 @@ function renderSheet(sec){
   var html = '<section class="card">';
   if(!isLane(sec)){
     var rating = tlpRating(data), r = rawOf(sec, data);
-    html += '<div class="rubhead"><div><div class="rubtitle">'+esc(def.title)+'</div><div class="rubsub">'+esc(def.sub||"")+' · crit '+critGoCount(data)+'/'+TLP_CRITS+' GO</div></div><div class="rubstat"><span class="rating '+(rating||"pend")+'">'+(rating||"—")+'</span><span class="rubgo">'+r.sum+' / '+r.count+' GO</span></div></div>';
+    html += '<div class="rubhead"><div><div class="rubtitle">'+esc(def.title)+'</div><div class="rubsub">'+esc(def.sub||"")+'</div></div><div class="rubstat"><span class="rating '+(rating||"pend")+'">'+(rating||"—")+'</span><span class="rubgo">'+r.sum+' / '+r.count+' GO</span></div></div>';
     html += '<p class="rubricnote" style="margin:10px 0 12px">'+esc(def.note)+' Time standard: order briefed in 45 minutes or less.</p>';
     html += '<div class="formrow" style="margin-bottom:8px">';
     html += '<div class="field"><label for="slname">Squad leader</label><input id="slname" data-act="field" data-field="slName" data-sec="tlp" type="text" autocomplete="off" placeholder="Rank / name" value="'+esc(data.slName)+'"></div>';
@@ -604,7 +604,7 @@ function renderReport(){
     }
     html += '<div class="repmeta">'+r.sum+' / '+max+' GO · weight '+pctTxt(W[sec])
          + metricTxt
-         + (sec==="tlp" ? ' · critical measures '+critGoCount(saved)+'/'+TLP_CRITS+' GO'
+         + (sec==="tlp" ? ''
             + (saved.slName ? ' · SL: '+esc(saved.slName) : '')
             + (saved.orderTime ? ' · order: '+esc(saved.orderTime)+' min' : '') : '')
          + ' · saved '+fmtWhen(saved.savedAt)+(saved.savedBy?' by '+esc(saved.savedBy):"")+'</div>';
