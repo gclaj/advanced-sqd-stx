@@ -147,32 +147,15 @@
   };
 
   /* Conduct an Ambush, Squad. T&EO 07-SQD-9010 (effective 06 Mar 2025), ATP 3-21.8.
-     Only the performance steps selected for this STX are graded: 2.b(1)(a-b), 2.b(2)(b-e),
-     2.b(4), 2.b(7)(b)1-4, 2.b(7)(d-g), 2.b(7)(i-j), 5.g(8)(a-c), 5.g(9), 5.g(12), 5.h,
-     6.a, 6.b, 6.e, 7.e, 7.f(1), 7.f(3), 7.g(1-2), 7.g(4), 9.a(2)(a), 9.b(5-7), 10.
+     Only the performance steps selected for this STX are graded: 5.g(8)(a-c), 5.g(9),
+     5.g(12), 5.h, 6.a, 6.b, 6.e, 7.e, 7.f(1), 7.f(3), 7.g(1-2), 7.g(4), 9.a(2)(a),
+     9.b(5-7), 10. The planning steps (step 2) were removed from this sheet.
      Each selected step is its own measure. Sub-measures of a critical (+) or leader (*)
      parent step carry the parent's mark. */
   var AMBUSH_RUBRIC = {
     id: "ambush", title: "Conduct an Ambush — Squad", sub: "T&EO 07-SQD-9010 · ATP 3-21.8 · selected performance steps",
     teo: true, groups: TEO_GROUPS,
     items: [
-      {id:"b1",  g:"pl", num:"2b(1)(a)",  crit:true, name:"Anticipated enemy force",           d:"Mission analysis determines, for the anticipated enemy force: type and size of target; organization or formation; route and direction of movement; time the force will reach or pass certain points along its route; weapons and equipment carried."},
-      {id:"b2",  g:"pl", num:"2b(1)(b)",  crit:true, name:"Enemy courses of action",           d:"Identifies the most likely and most dangerous courses of action."},
-      {id:"b3",  g:"pl", num:"2b(2)(b)",  crit:true, name:"Reconnaissance assets",             d:"Utilizes all assigned or available reconnaissance assets."},
-      {id:"b4",  g:"pl", num:"2b(2)(c)",  crit:true, name:"Tentative ambush position",         d:"Identifies a tentative ambush position, if not directed by higher headquarters."},
-      {id:"b5",  g:"pl", num:"2b(2)(d)",  crit:true, name:"Tentative ORP",                     d:"Identifies a tentative objective rally point."},
-      {id:"b6",  g:"pl", num:"2b(2)(e)",  crit:true, name:"Tentative assault, support & security positions", d:"Identifies tentative positions that cover the entire kill zone by direct and indirect fires; use existing and reinforcing obstacles (claymores and AT mines) to keep the enemy in the kill zone; and protect the assault and support forces with mines or explosives."},
-      {id:"b7",  g:"pl", num:"2b(4)",     crit:true, name:"Organization of forces",            d:"Determines the organization of forces: assault force, support force, security force."},
-      {id:"b8",  g:"pl", num:"2b(7)(b)1", crit:true, name:"Ambush site designated",            d:"At a minimum the ambush site has: field of fire into the kill zone; cover and concealment; protective obstacles; a covered and concealed withdrawal route; and is difficult for the enemy to attack from a flank."},
-      {id:"b9",  g:"pl", num:"2b(7)(b)2", crit:true, name:"Kill zone designated",              d:"At a minimum the kill zone: is where enemy forces are likely to enter; has natural tactical obstacles; is large enough to observe and engage the anticipated enemy force."},
-      {id:"b10", g:"pl", num:"2b(7)(b)3", crit:true, name:"Security positions designated",     d:"At a minimum the security positions: do not mask fires of the assault and support forces; provide timely information and give the leader enough time to act on it; can provide a support-by-fire position."},
-      {id:"b11", g:"pl", num:"2b(7)(b)4", crit:true, name:"ORP designated",                    d:"At a minimum the objective rally point is: easy to find; covered and concealed; away from natural lines of drift; defendable for short periods of time."},
-      {id:"b12", g:"pl", num:"2b(7)(d)",  crit:true, name:"Obstacles hold the enemy in the kill zone", d:"Plans the use of existing obstacles and reinforcing obstacles, claymores and AT mines, to keep the enemy in the kill zone."},
-      {id:"b13", g:"pl", num:"2b(7)(e)",  crit:true, name:"Kill zone covered by fires",        d:"Plans to cover the entire kill zone by direct and indirect fires."},
-      {id:"b14", g:"pl", num:"2b(7)(f)",  crit:true, name:"Initiation criteria",               d:"Develops criteria for initiation of the ambush."},
-      {id:"b15", g:"pl", num:"2b(7)(g)",  crit:true, name:"Engagement techniques",             d:"Designates engagement techniques, if different from unit SOP."},
-      {id:"b16", g:"pl", num:"2b(7)(i)",  crit:true, name:"Actions of all forces timed",       d:"Times the actions of all forces to prevent loss of surprise and ensure withdrawal before a counterattacking force can reach the kill zone: security force gives early warning, isolates the kill zone, and protects exposed flanks; assault force can quickly move into the kill zone to search dead and wounded, assemble EPWs, and collect equipment; indirect fires destroy remaining enemy in the kill zone and cover the withdrawal."},
-      {id:"b17", g:"pl", num:"2b(7)(j)",  crit:true, name:"Withdrawal routes",                 d:"Plans withdrawal routes."},
       {id:"b18", g:"pr", num:"5g(8)(a)",  ldr:true,  name:"Assault position selected",         d:"On the leader's reconnaissance, selects an assault position that provides cover and concealment; allows observation and fire into the kill zone; is close enough for rapid assault into the kill zone; and is protected by a natural or manmade obstacle if the enemy is mounted or armored."},
       {id:"b19", g:"pr", num:"5g(8)(b)",  ldr:true,  name:"Support position selected",         d:"Selects a support position that permits observation and effective fires into the kill zone and provides cover and concealment."},
       {id:"b20", g:"pr", num:"5g(8)(c)",  ldr:true,  name:"Security position selected",        d:"Selects security positions that are covered and concealed; provide early warning of enemy approach into the kill zone or toward any element; and allow elements to secure the squad, prevent escape from the kill zone, and prevent reinforcement of the enemy in it."},
